@@ -27,6 +27,15 @@ func (grid *Grid) Build() {
 	grid.generateLinks()
 }
 
+func (grid *Grid) Clear() {
+	links := grid.GetLinks()
+	for _, link := range links {
+		link.IsActive = false
+		link.IsReserved = false
+		link.Reservation = -1
+	}
+}
+
 func (grid *Grid) generateNodes() {
 	id := make([]int, 2)
 	grid.Nodes = make([][]*Node, grid.gridSize)
@@ -71,6 +80,8 @@ func (grid *Grid) generateLinks() {
 				grid.Links[i][j][k].Age = link.Age
 				grid.Links[i][j][k].IsActive = link.IsActive
 				grid.Links[i][j][k].IsPruned = link.IsPruned
+				grid.Links[i][j][k].Reservation = link.Reservation
+				grid.Links[i][j][k].IsReserved = link.IsReserved
 				//grid.links[i][j][k] = MakeLink(id, lifetime, false)
 			}
 		}

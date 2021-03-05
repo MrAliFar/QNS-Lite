@@ -1,6 +1,7 @@
 package quantum
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -53,22 +54,42 @@ func genEntangledLink(link *graph.Link) {
 	}
 }
 
-// TODO: FINISH THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// TODO: Write a less dumb swap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 func swap(req *request.Request, path path.Path, network graph.Topology, roundNum int) bool {
+	//fmt.Println(req.Position)
 	if req.Position == len(path)-1 {
+		//fmt.Println("SWAP: HAS REACHED 1")
+		req.HasReached = true
+		req.ServingTime = roundNum
 		return true
 	}
+	///////////////////// If swapping is unsuccessful, do the links get destroyed?
+	if req.Position == 1 {
+		network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsActive = false
+	}
+	network.GetLinkBetween(path[req.Position], path[req.Position+1]).IsActive = false
 	if rand.Float64() <= p_swap {
+		//fmt.Println("SWAP: Swap successful.")
 		if req.Position == 1 {
-			network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsActive = false
+			network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsReserved = false
+			network.GetLinkBetween(path[req.Position-1], path[req.Position]).Reservation = -1
 		}
-		network.GetLinkBetween(path[req.Position], path[req.Position+1]).IsActive = false
-		req.Position++
+		network.GetLinkBetween(path[req.Position], path[req.Position+1]).IsReserved = false
+		network.GetLinkBetween(path[req.Position], path[req.Position+1]).Reservation = -1
+		//if req.Position == 1 {
+		//	network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsActive = false
+		//}
+		//network.GetLinkBetween(path[req.Position], path[req.Position+1]).IsActive = false
+		//req.Position++
 		if req.Position == len(path)-1 {
+			fmt.Println("SWAP: HAS REACHED 2")
 			req.HasReached = true
 			req.ServingTime = roundNum
 			return true
 		}
+		req.Position++
+	} else {
+		req.Position = 1
 	}
 	return false
 }
@@ -78,10 +99,12 @@ func EG(links []*graph.Link) {
 }
 
 // TODO: This function should also take the round number as an input..........................
-func ES(reqs []*request.Request, network graph.Topology, roundNum int) int {
+func ES(req *request.Request, network graph.Topology, roundNum int) int {
+	var reached bool
 	numReached := 0
-	for _, req := range reqs {
-		numReached += swap(req, req.Paths[0], network, roundNum)
+	reached = swap(req, req.Paths[0], network, roundNum)
+	if reached == true {
+		numReached++
 	}
 	return numReached
 }

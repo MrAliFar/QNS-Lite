@@ -1,13 +1,18 @@
 package profile
 
-type profile interface {
+const (
+	MODIFIED_GREEDY = "modified greedy"
+)
+
+type Profile interface {
 	Build(topology string)
-	Run()
+	Run(numRequests int)
 	Stop()
-	Benchmark()
+	Clear()
+	GetRunTime() int
 }
 
 // Each profile will have a unique profile id.
-func BuildProfile(profileID int) profile {
+//func BuildProfile(profileID int) profile {
 
-}
+//}

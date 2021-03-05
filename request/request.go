@@ -18,6 +18,7 @@ type Request struct {
 	GenerationTime int
 	ServingTime    int
 	HasReached     bool
+	CanMove        bool
 }
 
 /////////////////////////// This package should be more general. Use an interface to avoid
@@ -50,9 +51,10 @@ func genRequests(N int, ids [][]int, priority []int, topology string, roundNum i
 			reqs[i].Src = graph.MakeNode(ids[r[0]], config.GetConfig().GetMemory())
 			reqs[i].Dest = graph.MakeNode(ids[r[1]], config.GetConfig().GetMemory())
 			reqs[i].Priority = priority[i]
-			reqs[i].Position = 0
+			reqs[i].Position = 1
 			reqs[i].GenerationTime = roundNum
 			reqs[i].HasReached = false
+			reqs[i].CanMove = false
 
 			////////////// TODO: IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			reqs[i].Paths = make([][]*graph.Node, 1)

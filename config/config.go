@@ -5,14 +5,18 @@ var config Config
 
 // The Config struct gathers all of the configuration parameters.
 type Config struct {
-	size     int
-	memory   int
-	lifetime int
+	size        int
+	memory      int
+	lifetime    int
+	numRequests int
 	// The number of paths each request tries to reserve for itself.
 	aggressiveness int
-	p_gen          float64
-	p_swap         float64
-	hasRecovery    bool
+	// The degree of opportunism
+	opportunismDegree int
+	p_gen             float64
+	p_swap            float64
+	hasRecovery       bool
+	isOpportunistic   bool
 }
 
 // init() initializes the config variable once the package is imported.
@@ -20,10 +24,13 @@ func init() {
 	config.size = 5
 	config.memory = 4
 	config.lifetime = 100
+	config.numRequests = 20
+	config.opportunismDegree = 1
 	config.p_gen = 0.5
 	config.p_swap = 0.5
 	config.aggressiveness = 1
 	config.hasRecovery = false
+	config.isOpportunistic = true
 }
 
 // GetConfig returns the configuration.
@@ -56,6 +63,11 @@ func (conf Config) GetLifetime() int {
 	return conf.lifetime
 }
 
+// GetNumRequests returns the number of requests.
+func (conf Config) GetNumRequests() int {
+	return conf.numRequests
+}
+
 // GetPGen returns the probability of a successful entanglement generation.
 func (conf Config) GetPGen() float64 {
 	return conf.p_gen
@@ -71,8 +83,16 @@ func (conf Config) GetAggressiveness() int {
 	return conf.aggressiveness
 }
 
+func (conf Config) GetOpportunismDegree() int {
+	return conf.opportunismDegree
+}
+
 func (conf Config) GetHasRecovery() bool {
 	return conf.hasRecovery
+}
+
+func (conf Config) GetIsOpportunistic() bool {
+	return conf.isOpportunistic
 }
 
 // TODO: CHECK THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

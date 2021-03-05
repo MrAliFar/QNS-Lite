@@ -13,25 +13,28 @@ import (
 	"example.com/quantum"
 )
 
-type modifiedGreedyProfile struct {
-	network     graph.Grid
+type ModifiedGreedyProfile struct {
+	network     *graph.Grid
 	isFinished  bool
 	hasRecovery bool
-	runTime     int
+	RunTime     int
 }
 
-func (mgp modifiedGreedyProfile) Build(topology string) {
-	mgp.runTime = 1
+func (mgp *ModifiedGreedyProfile) Build(topology string) {
+	mgp.RunTime = 1
 	mgp.hasRecovery = config.GetConfig().GetHasRecovery()
 	if topology == graph.GRID {
 		grid := new(graph.Grid)
 		grid.Build()
+		mgp.network = grid
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}
 }
 
-func (mgp modifiedGreedyProfile) Run(numRequests int) {
+////////////////// TODO: The requests should remain the same through iterations.
+////////////////// Take them out.
+func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 	var priority []int
 	priority = make([]int, numRequests)
 	// Priority for the requests
@@ -39,11 +42,19 @@ func (mgp modifiedGreedyProfile) Run(numRequests int) {
 		priority[i] = 1
 	}
 	ids := mgp.network.GetNodeIDs()
-	reqs, err := request.RG(numRequests, ids, priority, mgp.network.GetType(), mgp.runTime)
-	if err == nil {
-		fmt.Println("Profile Run: Error in request generation!")
+	reqs, err := request.RG(numRequests, ids, priority, mgp.network.GetType(), mgp.RunTime)
+	if err != nil {
+		fmt.Println("Profile Run: Error in request generation!", err)
 		return
 	}
+
+	//for _, req := range reqs {
+	//	n1 := req.Src
+	//	n2 := req.Dest
+	//	fmt.Println(*n1)
+	//	fmt.Println(*n2)
+	//}
+
 	//for i := 0; i < num; i++ {
 	//	fmt.Println(i, reqs[i].Src)
 	//	fmt.Println(reqs[i].Dest)
@@ -74,30 +85,178 @@ func (mgp modifiedGreedyProfile) Run(numRequests int) {
 	//}
 	links := mgp.network.GetLinks()
 	numReached := 0
-	for !mgp.isFinished {
-		isReady := true
-		mgp.runTime++
-		quantum.EG(links)
-		if !mgp.hasRecovery {
-			for _, req := range reqs {
-				if req.HasReached == true {
-					continue
+	isOpportunistic := config.GetConfig().GetIsOpportunistic()
+	itrCntr := 0
+	maxItr := 5000
+	var cntr int
+	if !isOpportunistic {
+		for !mgp.isFinished {
+			itrCntr++
+			//numReached = 0
+			if itrCntr == maxItr {
+				break
+			}
+			isReady := true
+			mgp.RunTime++
+			// EG() also handles lifetimes.
+			quantum.EG(links)
+			if !mgp.hasRecovery {
+				for reqNum, req := range reqs {
+					if req.HasReached == true {
+						// Release the reserved links
+						// Here, req.CanMove is used to release the links, and is set to false
+						// to prevent extra work every time the request enters this if statement.
+						if req.CanMove {
+							for i := 1; i <= len(req.Paths[0])-1; i++ {
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
+							}
+						}
+						req.CanMove = false
+						continue
+					}
+					cntr = 0
+					for i := 1; i <= len(req.Paths[0])-1; i++ {
+						link := mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
+						if link.IsReserved == false {
+							isReady = isReady && link.IsActive
+							cntr++
+						} else {
+							if link.Reservation == reqNum {
+								isReady = isReady && link.IsActive
+								cntr++
+							}
+						}
+						if cntr == 0 {
+							isReady = false
+						}
+						if !isReady {
+							break
+						}
+						// Solve the isReady issue.
+					}
+					//fmt.Println("Request", reqNum, isReady)
+					if isReady == true {
+						// req.CanMove shows the fact that the request has previously reserved the
+						// path, and is only trying to swap its way to the end.
+						if !req.CanMove {
+							for i := 1; i <= len(req.Paths[0])-1; i++ {
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+							}
+						}
+						req.CanMove = true
+						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+					}
+					isReady = true
 				}
-				for i := 1; i <= len(req.Paths[0])-1; i++ {
-					isReady = isReady && mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsActive
-				}
-				if isReady == true {
-					numReached += quantum.ES(req, mgp.network, mgp.runTime)
-				}
-				isReady = true
+			}
+			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
+			if numReached == len(reqs) {
+				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				mgp.isFinished = true
 			}
 		}
-		if numReached == len(reqs) {
-			mgp.isFinished = true
+	} else {
+		numReached = 0
+		oppCntr := 0
+		for !mgp.isFinished {
+			itrCntr++
+			if itrCntr == maxItr {
+				break
+			}
+			//numReached = 0
+			k := config.GetConfig().GetOpportunismDegree()
+			isReady := true
+			mgp.RunTime++
+			quantum.EG(links)
+			if !mgp.hasRecovery {
+				for reqNum, req := range reqs {
+					oppCntr = 0
+					if req.HasReached == true {
+						// Release the reserved links
+						// Here, req.CanMove is used to release the links, and is set to false
+						// to prevent extra work every time the request enters this if statement.
+						if req.CanMove {
+							for i := 1; i <= len(req.Paths[0])-1; i++ {
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
+								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
+							}
+						}
+						req.CanMove = false
+						continue
+					}
+					cntr = 0
+					// req.Position starts from 1. Check this!!!!!!!!!!!!!!!!!!!!!!!!!
+					for i := req.Position; i <= len(req.Paths[0])-1; i++ {
+						//fmt.Println("Request num", reqNum, "position is", req.Position)
+						link := mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
+						//fmt.Println("link is reserved", link.IsReserved)
+						if link.IsReserved == false {
+							//fmt.Println("link not reserved. Link activation is", link.IsActive)
+							isReady = isReady && link.IsActive
+							cntr++
+						} else {
+							if link.Reservation == reqNum {
+								//fmt.Println("corresponding reservation.")
+								isReady = isReady && link.IsActive
+								cntr++
+							}
+						}
+						if isReady == true {
+							//fmt.Println("oppCntr increment. oppCntr is:", oppCntr)
+							oppCntr++
+						} else {
+							break
+						}
+						if cntr == 0 {
+							isReady = false
+							break
+						}
+					}
+					//fmt.Println("Request", reqNum, oppCntr >= k)
+					if oppCntr >= k {
+						//if !req.CanMove {
+						for i := req.Position; i <= req.Position+oppCntr-1; i++ {
+							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+						}
+						//}
+						req.CanMove = true
+						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+					} else if (len(req.Paths[0]) - req.Position) <= oppCntr {
+						//if !req.CanMove {
+						for i := req.Position; i <= len(req.Paths[0])-1; i++ {
+							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+						}
+						//}
+						req.CanMove = true
+						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+						fmt.Println("Fill in here. Maybe the remaining links are less than k, but are ready nonetheless.")
+					}
+					isReady = true
+				}
+			}
+			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
+			if numReached == len(reqs) {
+				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				mgp.isFinished = true
+			}
 		}
 	}
 }
 
-func (mgp modifiedGreedyProfile) Stop() {
+func (mgp *ModifiedGreedyProfile) Stop() {
 	mgp.isFinished = true
+}
+
+func (mgp *ModifiedGreedyProfile) Clear() {
+	mgp.isFinished = false
+	mgp.RunTime = 1
+	mgp.network.Clear()
+}
+
+func (mgp *ModifiedGreedyProfile) GetRunTime() int {
+	return mgp.RunTime
 }

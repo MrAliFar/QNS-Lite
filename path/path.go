@@ -59,9 +59,9 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string, hasCo
 				reqs[i].Paths = append(reqs[i].Paths, PathToNode(pf.Find(req.Src, req.Dest)))
 			}
 			//fmt.Println("The new path is", reqs[i].Paths[len(reqs[i].Paths)-1])
-			for _, node := range reqs[i].Paths[len(reqs[i].Paths)-1] {
-				//fmt.Println(node.ID)
-			}
+			//for _, node := range reqs[i].Paths[len(reqs[i].Paths)-1] {
+			//fmt.Println(node.ID)
+			//}
 			//fmt.Println(j, "Appended!")
 			if !hasContention {
 				////////////////////////////// COMPLETE THIS!!!!!!!!!!!!!!!!!!!!!!

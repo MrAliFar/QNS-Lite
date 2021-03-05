@@ -24,9 +24,11 @@ type Node struct {
 
 // The Link struct provides a link abstraction.
 type Link struct {
-	ID       []int
-	Age      int
-	IsActive bool
+	ID          []int
+	Age         int
+	Reservation int
+	IsReserved  bool
+	IsActive    bool
 	// The IsPruned field is for managing the pruning process.
 	IsPruned bool
 }
@@ -39,6 +41,7 @@ type Link struct {
 // The Topology interface defines the necessary methods for a network abstraction.
 type Topology interface {
 	Build()
+	Clear()
 	generateNodes()
 	generateLinks()
 	//GetLinks() []Link
@@ -107,7 +110,7 @@ func MakeNode(id []int, memory int) *Node {
 // MakeLink creates a link.
 func MakeLink(id []int, age int, isActive bool) *Link {
 	var link Link
-	link = Link{ID: id, Age: age, IsActive: isActive, IsPruned: false}
+	link = Link{ID: id, Age: age, IsActive: isActive, IsPruned: false, Reservation: -1, IsReserved: false}
 	return &link
 }
 
