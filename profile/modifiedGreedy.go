@@ -8,13 +8,11 @@ import (
 
 	"example.com/request"
 
-	"example.com/path"
-
 	"example.com/quantum"
 )
 
 type ModifiedGreedyProfile struct {
-	network     *graph.Grid
+	Network     *graph.Grid
 	isFinished  bool
 	hasRecovery bool
 	RunTime     int
@@ -26,33 +24,30 @@ func (mgp *ModifiedGreedyProfile) Build(topology string) {
 	if topology == graph.GRID {
 		grid := new(graph.Grid)
 		grid.Build()
-		mgp.network = grid
+		mgp.Network = grid
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}
 }
 
+func (mgp *ModifiedGreedyProfile) GetNetwork() graph.Topology {
+	return mgp.Network
+}
+
 ////////////////// TODO: The requests should remain the same through iterations.
 ////////////////// Take them out.
-func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
-	var priority []int
-	priority = make([]int, numRequests)
+func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request) {
+	//var priority []int
+	//priority = make([]int, numRequests)
 	// Priority for the requests
-	for i := 0; i < numRequests; i++ {
-		priority[i] = 1
-	}
-	ids := mgp.network.GetNodeIDs()
-	reqs, err := request.RG(numRequests, ids, priority, mgp.network.GetType(), mgp.RunTime)
-	if err != nil {
-		fmt.Println("Profile Run: Error in request generation!", err)
-		return
-	}
-
-	//for _, req := range reqs {
-	//	n1 := req.Src
-	//	n2 := req.Dest
-	//	fmt.Println(*n1)
-	//	fmt.Println(*n2)
+	//for i := 0; i < numRequests; i++ {
+	//	priority[i] = 1
+	//}
+	//ids := mgp.network.GetNodeIDs()
+	//reqs, err := request.RG(numRequests, ids, priority, mgp.network.GetType(), mgp.RunTime)
+	//if err != nil {
+	//	fmt.Println("Profile Run: Error in request generation!", err)
+	//	return
 	//}
 
 	//for i := 0; i < num; i++ {
@@ -66,14 +61,30 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 	//fmt.Println("Request generation error:", err)
 
 	// TODO: hasRecovery can be forced here...........................................................
-	if mgp.hasRecovery {
-		path.PF(mgp.network, reqs, "modified greedy", false)
-	} else {
-		config := config.GetConfig()
-		configPointer := &config
-		configPointer.SetAggressiveness(1)
-		path.PF(mgp.network, reqs, "modified greedy", true)
-	}
+
+	//if mgp.hasRecovery {
+	//	path.PF(mgp.network, reqs, "modified greedy")
+	//} else {
+	//	config := config.GetConfig()
+	//	configPointer := &config
+	//	configPointer.SetAggressiveness(1)
+	//	path.PF(mgp.network, reqs, "modified greedy")
+	//}
+
+	//for _, req := range reqs {
+	//	n1 := req.Src
+	//	n2 := req.Dest
+	//	fmt.Println(*n1)
+	//	fmt.Println(*n2)
+	//	fmt.Println(len(req.Paths[0]))
+	//	lenn := len(req.Paths)
+	//	for i := 0; i <= lenn-1; i++ {
+	//		for _, nodede := range req.Paths[i] {
+	//			fmt.Println("The next node for path", i+1)
+	//			fmt.Println(*nodede)
+	//		}
+	//	}
+	//}
 
 	//check := 2
 	//fmt.Println(reqs[check].Src, reqs[check].Dest)
@@ -83,7 +94,7 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 	//for _, link := range links {
 	//	fmt.Println("Before", link.IsActive)
 	//}
-	links := mgp.network.GetLinks()
+	links := mgp.Network.GetLinks()
 	numReached := 0
 	isOpportunistic := config.GetConfig().GetIsOpportunistic()
 	itrCntr := 0
@@ -108,8 +119,8 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 						// to prevent extra work every time the request enters this if statement.
 						if req.CanMove {
 							for i := 1; i <= len(req.Paths[0])-1; i++ {
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
 							}
 						}
 						req.CanMove = false
@@ -117,7 +128,7 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 					}
 					cntr = 0
 					for i := 1; i <= len(req.Paths[0])-1; i++ {
-						link := mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
+						link := mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
 						if link.IsReserved == false {
 							isReady = isReady && link.IsActive
 							cntr++
@@ -141,12 +152,12 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 						// path, and is only trying to swap its way to the end.
 						if !req.CanMove {
 							for i := 1; i <= len(req.Paths[0])-1; i++ {
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
 							}
 						}
 						req.CanMove = true
-						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+						numReached += quantum.ES(req, mgp.Network, mgp.RunTime)
 					}
 					isReady = true
 				}
@@ -179,8 +190,8 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 						// to prevent extra work every time the request enters this if statement.
 						if req.CanMove {
 							for i := 1; i <= len(req.Paths[0])-1; i++ {
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
-								mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = false
+								mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = -1
 							}
 						}
 						req.CanMove = false
@@ -190,7 +201,7 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 					// req.Position starts from 1. Check this!!!!!!!!!!!!!!!!!!!!!!!!!
 					for i := req.Position; i <= len(req.Paths[0])-1; i++ {
 						//fmt.Println("Request num", reqNum, "position is", req.Position)
-						link := mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
+						link := mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1])
 						//fmt.Println("link is reserved", link.IsReserved)
 						if link.IsReserved == false {
 							//fmt.Println("link not reserved. Link activation is", link.IsActive)
@@ -218,21 +229,21 @@ func (mgp *ModifiedGreedyProfile) Run(numRequests int) {
 					if oppCntr >= k {
 						//if !req.CanMove {
 						for i := req.Position; i <= req.Position+oppCntr-1; i++ {
-							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
-							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+							mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+							mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
 						}
 						//}
 						req.CanMove = true
-						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+						numReached += quantum.ES(req, mgp.Network, mgp.RunTime)
 					} else if (len(req.Paths[0]) - req.Position) <= oppCntr {
 						//if !req.CanMove {
 						for i := req.Position; i <= len(req.Paths[0])-1; i++ {
-							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
-							mgp.network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
+							mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).IsReserved = true
+							mgp.Network.GetLinkBetween(req.Paths[0][i], req.Paths[0][i-1]).Reservation = reqNum
 						}
 						//}
 						req.CanMove = true
-						numReached += quantum.ES(req, mgp.network, mgp.RunTime)
+						numReached += quantum.ES(req, mgp.Network, mgp.RunTime)
 						fmt.Println("Fill in here. Maybe the remaining links are less than k, but are ready nonetheless.")
 					}
 					isReady = true
@@ -254,9 +265,13 @@ func (mgp *ModifiedGreedyProfile) Stop() {
 func (mgp *ModifiedGreedyProfile) Clear() {
 	mgp.isFinished = false
 	mgp.RunTime = 1
-	mgp.network.Clear()
+	mgp.Network.Clear()
 }
 
 func (mgp *ModifiedGreedyProfile) GetRunTime() int {
 	return mgp.RunTime
+}
+
+func (mgp *ModifiedGreedyProfile) GetHasRecovery() bool {
+	return mgp.hasRecovery
 }

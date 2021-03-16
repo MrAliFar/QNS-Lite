@@ -26,10 +26,11 @@ func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 }
 
 func (bm *Benchmarker) Start(itr int) {
+	reqs := profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), bm.profile.GetHasRecovery())
 	for i := 0; i <= itr-1; i++ {
 		//fmt.Println(*bm)
 		fmt.Println("Iteration", i)
-		bm.profile.Run(config.GetConfig().GetNumRequests())
+		bm.profile.Run(reqs)
 		//fmt.Println(*bm)
 		bm.TotalWaitingTime[i] = bm.profile.GetRunTime()
 		bm.profile.Clear()

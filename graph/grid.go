@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"math"
 
 	"example.com/config"
@@ -123,7 +124,7 @@ func (grid *Grid) GetNodeIDs() [][]int {
 	return ids
 }
 
-func (grid *Grid) GetNeighbors(node *Node) []*Node {
+func (grid *Grid) GetNeighbors(node *Node) ([]*Node, bool) {
 	neighbors := make([]*Node, 1)
 	neighbors[0] = new(Node)
 	//neighbors[1] = new(Node)
@@ -135,8 +136,10 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 	bottomRight := []int{0, grid.gridSize - 1}
 	topLeft := []int{grid.gridSize - 1, 0}
 	topRight := []int{grid.gridSize - 1, grid.gridSize - 1}
+	isNil := true
 	if IsEqual(node.ID, bottomLeft) {
 		if grid.GetLinkBetween(node, grid.Nodes[1][0]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[1][0]
 			} else {
@@ -144,6 +147,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[0][1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[0][1]
 			} else {
@@ -152,10 +156,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 		//neighbors[0] = grid.Nodes[1][0]
 		//neighbors[1] = grid.Nodes[0][1]
-		return neighbors
+		return neighbors, isNil
 	}
 	if IsEqual(node.ID, bottomRight) {
 		if grid.GetLinkBetween(node, grid.Nodes[1][grid.gridSize-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[1][grid.gridSize-1]
 			} else {
@@ -163,6 +168,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[0][grid.gridSize-2]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[0][grid.gridSize-2]
 			} else {
@@ -171,10 +177,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 		//neighbors[0] = grid.Nodes[1][grid.gridSize-1]
 		//neighbors[1] = grid.Nodes[0][grid.gridSize-2]
-		return neighbors
+		return neighbors, isNil
 	}
 	if IsEqual(node.ID, topLeft) {
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-1][1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-1][1]
 			} else {
@@ -182,6 +189,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-2][0]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-2][0]
 			} else {
@@ -190,10 +198,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 		//neighbors[0] = grid.Nodes[grid.gridSize-1][1]
 		//neighbors[1] = grid.Nodes[grid.gridSize-2][0]
-		return neighbors
+		return neighbors, isNil
 	}
 	if IsEqual(node.ID, topRight) {
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-2][grid.gridSize-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-2][grid.gridSize-1]
 			} else {
@@ -201,6 +210,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-1][grid.gridSize-2]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-1][grid.gridSize-2]
 			} else {
@@ -209,10 +219,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 		//neighbors[0] = grid.Nodes[grid.gridSize-2][grid.gridSize-1]
 		//neighbors[1] = grid.Nodes[grid.gridSize-1][grid.gridSize-2]
-		return neighbors
+		return neighbors, isNil
 	}
 	if node.ID[0] == 0 {
 		if grid.GetLinkBetween(node, grid.Nodes[0][node.ID[1]-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[0][node.ID[1]-1]
 			} else {
@@ -220,6 +231,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[0][node.ID[1]+1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[0][node.ID[1]+1]
 			} else {
@@ -227,6 +239,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[1][node.ID[1]]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[1][node.ID[1]]
 			} else {
@@ -236,10 +249,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		//neighbors[0] = grid.Nodes[0][node.ID[1]-1]
 		//neighbors[1] = grid.Nodes[0][node.ID[1]+1]
 		//neighbors = append(neighbors, grid.Nodes[1][node.ID[1]])
-		return neighbors
+		return neighbors, isNil
 	}
 	if node.ID[0] == grid.gridSize-1 {
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-1][node.ID[1]-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-1][node.ID[1]-1]
 			} else {
@@ -247,6 +261,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-1][node.ID[1]+1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-1][node.ID[1]+1]
 			} else {
@@ -254,6 +269,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[grid.gridSize-2][node.ID[1]]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[grid.gridSize-2][node.ID[1]]
 			} else {
@@ -263,10 +279,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		//neighbors[0] = grid.Nodes[grid.gridSize-1][node.ID[1]-1]
 		//neighbors[1] = grid.Nodes[grid.gridSize-1][node.ID[1]+1]
 		//neighbors = append(neighbors, grid.Nodes[grid.gridSize-2][node.ID[1]])
-		return neighbors
+		return neighbors, isNil
 	}
 	if node.ID[1] == 0 {
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]-1][0]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]-1][0]
 			} else {
@@ -274,6 +291,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]+1][0]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]+1][0]
 			} else {
@@ -281,6 +299,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]][1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]][1]
 			} else {
@@ -290,10 +309,11 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		//neighbors[0] = grid.Nodes[node.ID[0]-1][0]
 		//neighbors[1] = grid.Nodes[node.ID[0]+1][0]
 		//neighbors = append(neighbors, grid.Nodes[node.ID[0]][1])
-		return neighbors
+		return neighbors, isNil
 	}
 	if node.ID[1] == grid.gridSize-1 {
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]-1][grid.gridSize-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]-1][grid.gridSize-1]
 			} else {
@@ -301,6 +321,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]+1][grid.gridSize-1]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]+1][grid.gridSize-1]
 			} else {
@@ -308,6 +329,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 			}
 		}
 		if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]][grid.gridSize-2]).IsPruned == false {
+			isNil = false
 			if neighbors[0].Memory == 0 {
 				neighbors[0] = grid.Nodes[node.ID[0]][grid.gridSize-2]
 			} else {
@@ -317,9 +339,10 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		//neighbors[0] = grid.Nodes[node.ID[0]-1][grid.gridSize-1]
 		//neighbors[1] = grid.Nodes[node.ID[0]+1][grid.gridSize-1]
 		//neighbors = append(neighbors, grid.Nodes[node.ID[0]][grid.gridSize-2])
-		return neighbors
+		return neighbors, isNil
 	}
 	if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]-1][node.ID[1]]).IsPruned == false {
+		isNil = false
 		if neighbors[0].Memory == 0 {
 			neighbors[0] = grid.Nodes[node.ID[0]-1][node.ID[1]]
 		} else {
@@ -327,6 +350,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 	}
 	if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]][node.ID[1]-1]).IsPruned == false {
+		isNil = false
 		if neighbors[0].Memory == 0 {
 			neighbors[0] = grid.Nodes[node.ID[0]][node.ID[1]-1]
 		} else {
@@ -334,6 +358,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 	}
 	if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]][node.ID[1]+1]).IsPruned == false {
+		isNil = false
 		if neighbors[0].Memory == 0 {
 			neighbors[0] = grid.Nodes[node.ID[0]][node.ID[1]+1]
 		} else {
@@ -341,6 +366,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 		}
 	}
 	if grid.GetLinkBetween(node, grid.Nodes[node.ID[0]+1][node.ID[1]]).IsPruned == false {
+		isNil = false
 		if neighbors[0].Memory == 0 {
 			neighbors[0] = grid.Nodes[node.ID[0]+1][node.ID[1]]
 		} else {
@@ -351,7 +377,7 @@ func (grid *Grid) GetNeighbors(node *Node) []*Node {
 	//neighbors[1] = grid.Nodes[node.ID[0]][node.ID[1]-1]
 	//neighbors = append(neighbors, grid.Nodes[node.ID[0]][node.ID[1]+1])
 	//neighbors = append(neighbors, grid.Nodes[node.ID[0]+1][node.ID[1]])
-	return neighbors
+	return neighbors, isNil
 }
 
 //////////////////////////////////////////// TODO: Check this function!
@@ -359,6 +385,10 @@ func (grid *Grid) GetLinkBetween(n1, n2 *Node) *Link {
 	id1 := n1.ID
 	id2 := n2.ID
 	var x, y, z int
+	if id1[0] == id2[0] && id1[1] == id2[1] {
+		fmt.Println("Inside GetLinkBetween: identical nodes.")
+		return nil
+	}
 	if id1[0] == id2[0] {
 		x = id1[0]
 		y = 0
@@ -376,6 +406,7 @@ func (grid *Grid) GetLinkBetween(n1, n2 *Node) *Link {
 			z = id2[0]
 		}
 	}
+	//fmt.Println("Inside get links", x, y, z)
 	return grid.Links[x][y][z]
 }
 

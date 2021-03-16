@@ -16,6 +16,7 @@ type Config struct {
 	p_gen             float64
 	p_swap            float64
 	hasRecovery       bool
+	hasContention     bool
 	isOpportunistic   bool
 }
 
@@ -24,13 +25,14 @@ func init() {
 	config.size = 5
 	config.memory = 4
 	config.lifetime = 100
-	config.numRequests = 20
+	config.numRequests = 10
 	config.opportunismDegree = 1
-	config.p_gen = 0.5
-	config.p_swap = 0.5
-	config.aggressiveness = 1
-	config.hasRecovery = false
-	config.isOpportunistic = true
+	config.p_gen = 0.8
+	config.p_swap = 0.8
+	config.aggressiveness = 4
+	config.hasRecovery = true
+	config.hasContention = true
+	config.isOpportunistic = false
 }
 
 // GetConfig returns the configuration.
@@ -89,6 +91,10 @@ func (conf Config) GetOpportunismDegree() int {
 
 func (conf Config) GetHasRecovery() bool {
 	return conf.hasRecovery
+}
+
+func (conf Config) GetHasContention() bool {
+	return conf.hasContention
 }
 
 func (conf Config) GetIsOpportunistic() bool {

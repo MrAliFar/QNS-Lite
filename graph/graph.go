@@ -50,7 +50,7 @@ type Topology interface {
 	GetLinks() []*Link
 	GetType() string
 	//GetNodes() [][]
-	GetNeighbors(*Node) []*Node
+	GetNeighbors(*Node) ([]*Node, bool)
 	GetLinkBetween(n1, n2 *Node) *Link
 	Distance(*Node, *Node, string) int
 	//Prune([]*Link)
@@ -121,6 +121,12 @@ func MakeLink(id []int, age int, isActive bool) *Link {
 func Prune(links []*Link) {
 	for _, link := range links {
 		link.IsPruned = true
+	}
+}
+
+func DepruneLinks(links []*Link) {
+	for _, link := range links {
+		link.IsPruned = false
 	}
 }
 

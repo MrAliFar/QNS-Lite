@@ -41,12 +41,13 @@ func main() {
 	//	fmt.Println("After", link.IsActive)
 	//}
 	/////////////////////////////////////////////////////// Implement lifetime!!!!!!!!
-	itr := 5000
+	itr := 1
+	maxItr := 5000
 	bm := new(benchmark.Benchmarker)
 	bm.Set(itr, "modified greedy", "grid")
 	bm.Start(itr)
 	fmt.Println(*bm)
-	fmt.Println("The average waiting time is:", bm.AverageWaiting(5000))
-	fmt.Println("The variance of the waiting time is:", bm.VarianceWaiting(5000))
+	fmt.Println("The average waiting time is:", bm.AverageWaiting(maxItr))
+	fmt.Println("The variance of the waiting time is:", bm.VarianceWaiting(maxItr))
 	//fmt.Println(*bm)
 }
