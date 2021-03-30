@@ -13,8 +13,9 @@ type Request struct {
 	Src            *graph.Node
 	Dest           *graph.Node
 	Paths          [][]*graph.Node
-	Priority       int
+	PositionID     []int
 	Position       int
+	Priority       int
 	GenerationTime int
 	ServingTime    int
 	HasReached     bool
@@ -50,8 +51,9 @@ func genRequests(N int, ids [][]int, priority []int, topology string, roundNum i
 			reqs[i].Dest.ID = make([]int, 2)
 			reqs[i].Src = graph.MakeNode(ids[r[0]], config.GetConfig().GetMemory())
 			reqs[i].Dest = graph.MakeNode(ids[r[1]], config.GetConfig().GetMemory())
-			reqs[i].Priority = priority[i]
+			reqs[i].PositionID = make([]int, 1)
 			reqs[i].Position = 1
+			reqs[i].Priority = priority[i]
 			reqs[i].GenerationTime = roundNum
 			reqs[i].HasReached = false
 			reqs[i].CanMove = false
@@ -81,6 +83,29 @@ func genRequests(N int, ids [][]int, priority []int, topology string, roundNum i
 // TODO: Handle the priorities
 func RG(N int, ids [][]int, priority []int, topology string, roundNum int) ([]*Request, error) {
 	return genRequests(N, ids, priority, topology, roundNum)
+}
+
+//func isPathless(req *Request) bool {
+//	if len(req.Paths) > 1 {
+//		return false
+//	} else {
+//		if Paths[0][0].Memory = 0 {
+//			return true
+//		}
+//	}
+//	return false
+//}
+
+func ClearReq(req *Request) {
+	req.Position = 1
+	req.HasReached = false
+	req.CanMove = false
+}
+
+func ClearReqPaths(reqs []*Request) {
+	for _, req := range reqs {
+		req.Paths = make([][]*graph.Node, 1)
+	}
 }
 
 // GatherRemainingRequests() gathers the requests not

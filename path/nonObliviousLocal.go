@@ -1,7 +1,8 @@
 package path
 
 import (
-	"fmt"
+	"math/rand"
+	"time"
 
 	"example.com/graph"
 )
@@ -21,6 +22,7 @@ func (nol *nonObliviousLocal) Build(network graph.Topology) {
 	nol.curr = new(graph.Node)
 	nol.isFinished = false
 	nol.network = network
+	rand.Seed(time.Now().UTC().UnixNano())
 	//mg.path[0] = mg.src
 	//mg.curr = mg.src
 }
@@ -33,41 +35,113 @@ func (nol *nonObliviousLocal) Clear() {
 	//nol.curr = nil
 }
 
-func (nol *nonObliviousLocal) Find(src, dest *graph.Node) Path {
+func (nol *nonObliviousLocal) Find(src, dest *graph.Node) (Path, []int, []int, bool) {
 	nol.curr = src
 	nol.add(src)
 	cntr := 0
+	//mapping := make(map[*graph.Node]int)
+	mapping := make([]int, 1)
+	isMappingNil := true
+	mappingCursor := 0
+	options := make([]int, 1)
+	counter := 0
+	anotherCounter := 0
 	for !nol.curr.IsEqual(dest) {
-		//fmt.Println("Inside Find - Network Size is:", mg.network.GetSize())
-		//fmt.Println("Inside Find - Counter Threshold is:", mg.network.GetSize()^2)
 		if cntr >= nol.network.GetSize()*nol.network.GetSize() {
-			fmt.Println("Inside Find. Counter overflow.")
-			return nil
+			//fmt.Println("Inside Find. Counter overflow.")
+			return nil, nil, nil, true
 		}
 		cntr = cntr + 1
-		next := nol.next(dest)
-		//fmt.Println("Next found", next, "CNTR", cntr)
-		if next.Memory == 0 {
-			//fmt.Println(mg.path)
-			return nil
+		next := nol.path[len(nol.path)-1]
+		var choices []*graph.Node
+		check := true
+		for check {
+			anotherCounter++
+			if anotherCounter >= nol.network.GetSize()*nol.network.GetSize() {
+				//fmt.Println("Inside Find. anotherCounter overflow.")
+				return nil, nil, nil, true
+			}
+			if len(nol.path) < 2 {
+				temp, tempChoices, _ := nol.next(dest)
+				next = temp
+				choices = tempChoices
+				break
+			}
+			temp, tempChoices, _ := nol.next(dest)
+			next = temp
+			choices = tempChoices
+			if !graph.IsEqual(next.ID, nol.path[len(nol.path)-2].ID) {
+				////////////////////////////////////// Maybe I can do some pruning here.
+				check = false
+			}
 		}
-		nol.add(nol.next(dest))
+		//fmt.Println("next is", next.ID, "last is", mg.path[len(mg.path)-1])
+		if len(choices) > 1 {
+			isMappingNil = false
+			if mappingCursor == 0 {
+				mapping[mappingCursor] = len(nol.path) - 1
+			} else {
+				mapping = append(mapping, len(nol.path)-1)
+			}
+			if counter == 0 {
+				options[counter] = len(choices)
+			} else {
+				options = append(options, len(choices))
+			}
+			//options[counter] = len(choices)
+			counter++
+			mappingCursor++
+		}
+		//fmt.Println("Next found", next, "CNTR", cntr)
+		//fmt.Println("This is the path after finding:")
+		//for _, nodede := range mg.path {
+		//	fmt.Println(nodede.ID)
+		//}
+		if next == nil {
+			//fmt.Println("nil next", mg.path)
+			return nil, nil, nil, true
+		}
+		//mg.add(mg.next(dest))
+		nol.add(next)
 		nol.curr = nol.path[len(nol.path)-1]
 	}
 	//fmt.Println("Found Path - inside find: ", mg.path)
-	return nol.path
+	return nol.path, mapping, options, isMappingNil
 }
 
-func (nol *nonObliviousLocal) next(dest *graph.Node) *graph.Node {
+func (nol *nonObliviousLocal) next(dest *graph.Node) (*graph.Node, []*graph.Node, int) {
 	neighbors, neighIsNil := nol.network.GetNeighbors(nol.curr)
 	//fmt.Println("Inside next - The neighbors are:", neighbors)
 	if neighIsNil {
-		return nil
+		return nil, nil, -1
 	}
 	optimumNode := neighbors[0]
+	tempNode := optimumNode
 	choices := make([]*graph.Node, 1)
 	choices[0] = optimumNode
-	return nil
+	for _, node := range neighbors {
+		if graph.IsEqual(node.ID, tempNode.ID) {
+			continue
+		}
+		//////// This is the important part.
+		if nol.network.GetLinkBetween(nol.curr, node).IsActive == false {
+			continue
+		}
+		_, neighOfNeighIsNil := nol.network.GetNeighbors(node)
+		if neighOfNeighIsNil {
+			continue
+		}
+		if nol.network.Distance(node, dest, "hop") == nol.network.Distance(optimumNode, dest, "hop") {
+			choices = append(choices, node)
+		}
+		if nol.network.Distance(node, dest, "hop") < nol.network.Distance(optimumNode, dest, "hop") {
+			optimumNode = node
+			choices = make([]*graph.Node, 1)
+			choices[0] = optimumNode
+		}
+	}
+
+	return nil, nil, -1
 }
 
 func (nol *nonObliviousLocal) add(n *graph.Node) {

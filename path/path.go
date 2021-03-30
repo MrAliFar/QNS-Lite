@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	MODIFIED_GREEDY = "modified greedy"
-	Q_PASS          = "Q-Pass"
-	Q_CAST          = "Q-CAST"
-	SLMP            = "SLMP"
+	MODIFIED_GREEDY    = "modified greedy"
+	NONOBLIVIOUS_LOCAL = "nonoblivious local"
+	Q_PASS             = "Q-Pass"
+	Q_CAST             = "Q-CAST"
+	SLMP               = "SLMP"
 )
 
 type Path []*graph.Node
@@ -34,6 +35,10 @@ func BuildPathFinder(algorithm string, network graph.Topology) PathFinder {
 		var mg *modifiedGreedy = new(modifiedGreedy)
 		mg.Build(network)
 		return mg
+	} else if algorithm == NONOBLIVIOUS_LOCAL {
+		var nol *nonObliviousLocal = new(nonObliviousLocal)
+		nol.Build(network)
+		return nol
 	}
 	fmt.Println("path.go: Warning! algorithm not recognized!")
 	return nil
@@ -42,38 +47,61 @@ func BuildPathFinder(algorithm string, network graph.Topology) PathFinder {
 func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 	pf := BuildPathFinder(algorithm, network)
 	hasContention := config.GetConfig().GetHasContention()
+	leftOverReqs := make([]*request.Request, 0)
 	//paths := make([]Path, len(reqs))
 	for i, req := range reqs {
 		aggressiveness := config.GetConfig().GetAggressiveness()
 		if !hasContention {
-			fmt.Println("Hi, I do not have contention!")
+			//fmt.Println("Hi, I do not have contention!")
 			for j := 1; j <= aggressiveness; j++ {
 				if j == 1 {
-					fmt.Println("Hi, I do not have contention!, j = 1")
+					//fmt.Println("Hi, I do not have contention!, j = 1")
 					nodes, _, _, _ := pf.Find(req.Src, req.Dest)
+					//if len(nodes) == 0 {
+					//	continue
+					//}
 					nodesToBeCopied := PathToNode(nodes)
 					reqs[i].Paths[j-1] = make([]*graph.Node, len(nodesToBeCopied))
 					copy(reqs[i].Paths[j-1], nodesToBeCopied)
 				} else {
-					fmt.Println("Hi, I do not have contention!, j = ", j)
+					//fmt.Println("Hi, I do not have contention!, j = ", j)
 					nodes, _, _, _ := pf.Find(req.Src, req.Dest)
+					//if len(nodes) == 0 {
+					//	continue
+					//}
 					reqs[i].Paths = append(reqs[i].Paths, PathToNode(nodes))
 				}
-				fmt.Println("Hi, I do not have contention! Out of j if-else.")
+				//fmt.Println("Hi, I do not have contention! Out of j if-else.")
 				graph.Prune(PathToLinks(reqs[i].Paths[len(reqs[i].Paths)-1], network))
-				fmt.Println("Hi, I do not have contention! Just pruned!")
+				//fmt.Println("Hi, I do not have contention! Just pruned!")
 				pf.Clear()
+			}
+			if len(req.Paths[0]) == 0 {
+				leftOverReqs = append(leftOverReqs, req)
+			}
+			if len(req.Paths) > 1 {
+				for m, _ := range req.Paths {
+					if m == 0 {
+						continue
+					}
+					//fmt.Println("req.Path length is:", len(req.Paths))
+					if len(req.Paths[m]) == 0 {
+						req.Paths = req.Paths[0:m]
+						break
+					}
+				}
 			}
 			continue
 		}
 		//fmt.Println("PF - request number", i)
 		nodes, mapping, options, mappingIsNull := pf.Find(req.Src, req.Dest)
 		pf.Clear()
-		fmt.Println("mapping is", mapping)
-		fmt.Println("first path is")
-		for _, nn := range nodes {
-			fmt.Println("node", nn.ID)
-		}
+		//fmt.Println("mapping is", mapping)
+		//fmt.Println("first path is")
+
+		//for _, nn := range nodes {
+		//	fmt.Println("node", nn.ID)
+		//}
 		nodesToBeCopied := PathToNode(nodes)
 		reqs[i].Paths[0] = make([]*graph.Node, len(nodesToBeCopied))
 		copy(reqs[i].Paths[0], nodesToBeCopied)
@@ -100,9 +128,11 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 			//tempLink[0] = network.GetLinkBetween(reqs[i].Paths[aggIndex][mapping[0]], reqs[i].Paths[total][mapping[0]+1])
 			//graph.Prune(tempLink)
 
-			fmt.Println("mapping[index] is", mapping[0])
-			fmt.Println("Source of the request is", req.Src.ID, "Destination of the request is", req.Dest.ID)
-			fmt.Println("totalOptions is", totalOptions)
+			////////////////////////////////////// Useful logging
+			//fmt.Println("mapping[index] is", mapping[0])
+			//fmt.Println("Source of the request is", req.Src.ID, "Destination of the request is", req.Dest.ID)
+			//fmt.Println("totalOptions is", totalOptions)
+
 			findOverlappingPaths(reqs, network, pf, &total, &totalOptions, aggIndex, 0, i, mapping, options)
 			/*for tries <= totalOptions && total <= totalOptions {
 				if index >= len(mapping) {
@@ -165,14 +195,40 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 		//}
 	}
 	graph.Deprune(network)
+	leftOverCntr := 0
+	//fmt.Println("The length of the leftover requests is:", len(leftOverReqs))
+	for len(leftOverReqs) > 0 {
+		//fmt.Println("Dealing with leftover requests.")
+		leftOverCntr++
+		if leftOverCntr >= len(leftOverReqs)*len(leftOverReqs) {
+			graph.Deprune(network)
+			leftOverCntr = 0
+		}
+		temp := leftOverReqs
+		leftOverReqs = make([]*request.Request, 0)
+		for _, req := range temp {
+			//fmt.Println("Hi, I do not have contention!, j = 1")
+			nodes, _, _, _ := pf.Find(req.Src, req.Dest)
+			pf.Clear()
+			nodesToBeCopied := PathToNode(nodes)
+			req.Paths[0] = make([]*graph.Node, len(nodesToBeCopied))
+			copy(req.Paths[0], nodesToBeCopied)
+			if len(req.Paths[0]) == 0 {
+				leftOverReqs = append(leftOverReqs, req)
+				continue
+			}
+			graph.Prune(PathToLinks(req.Paths[0], network))
+		}
+	}
+	graph.Deprune(network)
 	//return paths
 }
 
 func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf PathFinder, _total *int, totalOptions *int, aggIndex int, index int, i int, mapping []int, options []int) {
-	fmt.Println("Halo! Ich bin Ali!")
+	//fmt.Println("Halo! Ich bin Ali!")
 	linksToDeprune := make([]*graph.Link, 0)
 	if len(mapping) > index+1 {
-		fmt.Println("Going one level deeper. index is", index)
+		//fmt.Println("Going one level deeper. index is", index)
 		findOverlappingPaths(reqs, network, pf, _total, totalOptions, aggIndex, index+1, i, mapping, options)
 		// We need some pruning here.
 	}
@@ -181,13 +237,15 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 		return
 	}
 	tempLink := make([]*graph.Link, 1)
-	fmt.Println("Right in the entrance:", "mapping[index] is", mapping[index], "aggIndex is", aggIndex, "total is", *_total)
+	//fmt.Println("Right in the entrance:", "mapping[index] is", mapping[index], "aggIndex is", aggIndex, "total is", *_total)
 	tempLink[0] = network.GetLinkBetween(reqs[i].Paths[aggIndex][mapping[index]], reqs[i].Paths[aggIndex][mapping[index]+1])
 	graph.Prune(tempLink)
 	linksToDeprune = append(linksToDeprune, tempLink...)
-	for _, linkkk := range linksToDeprune {
-		fmt.Println("link to deprune", linkkk.ID, "request number", i)
-	}
+
+	//for _, linkkk := range linksToDeprune {
+	//fmt.Println("link to deprune", linkkk.ID, "request number", i)
+	//}
+
 	//index := 0
 	//aggIndex := 0
 	///////////////////////////////////////////// tempIndex is important!!!!!
@@ -201,15 +259,15 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 	//total := 0
 	//total := *_total
 	var pathToBeCopied []*graph.Node
-	fmt.Println("Source of the request is", req.Src.ID, "Destination of the request is", req.Dest.ID)
-	fmt.Println("totalOptions is", *totalOptions)
+	//fmt.Println("Source of the request is", req.Src.ID, "Destination of the request is", req.Dest.ID)
+	//fmt.Println("totalOptions is", *totalOptions)
 	////////////////////////////////////////////// Check the third condition
 	for tries <= *totalOptions && *_total <= *totalOptions && tempIndex < options[index] {
 		if index >= len(mapping) {
 			tries++
 			continue
 		}
-		fmt.Println("tries is", tries, "total is", *_total)
+		//fmt.Println("tries is", tries, "total is", *_total)
 		// Should I use Paths[index] or Paths[0]?????????????????????????????????????????????????????
 		// I should use all of the paths for further exploration, not just Paths[0]
 		tries++
@@ -226,11 +284,11 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 		//linksToDeprune = append(linksToDeprune, tempLink...)
 
 		//////////// Previous find
-		fmt.Println("totalOptions is", *totalOptions)
+		//fmt.Println("totalOptions is", *totalOptions)
 		pf.Clear()
 		if tail != nil {
 			///////////////// Adding the new Path.
-			fmt.Println("Aha! New tail is not nil for request", i)
+			//fmt.Println("Aha! New tail is not nil for request", i)
 			temp := make([]*graph.Node, len(reqs[i].Paths[aggIndex][0:mapping[index]+1])+len(tail)-1)
 			reqs[i].Paths = append(reqs[i].Paths, temp)
 			//reqs[i].Paths[total+1] = make([]*graph.Node, len(reqs[i].Paths[aggIndex][0:mapping[index]+1])+len(tail))
@@ -243,13 +301,13 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 				pathToBeCopied = append(tempPath, PathToNode(tail)...)
 				//pathToBeCopied = append(reqs[i].Paths[aggIndex][0:mapping[index]], PathToNode(tail)...)
 			}
-			fmt.Println("Adding new path:", "*_total is", *_total)
+			//fmt.Println("Adding new path:", "*_total is", *_total)
 			copy(reqs[i].Paths[*_total+1], pathToBeCopied)
 
 			*_total++
 			localTotal := *_total
 			if !newMappingIsNil {
-				fmt.Println("Aha! New mapping is not nil for request", i, "The mapping is", newMapping)
+				//fmt.Println("Aha! New mapping is not nil for request", i, "The mapping is", newMapping)
 				//////// Update the mapping indices.
 				for j, _ := range newMapping {
 					newMapping[j] += mapping[index]
@@ -260,20 +318,24 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 					return
 				}
 				//graph.DepruneLinks(linksToDeprune)
-				for _, linkkk := range linksToDeprune {
-					fmt.Println("link to deprune", linkkk.ID, "request number", i)
-				}
+
+				//for _, linkkk := range linksToDeprune {
+				//	//fmt.Println("link to deprune", linkkk.ID, "request number", i)
+				//}
+
 				findOverlappingPaths(reqs, network, pf, _total, totalOptions, localTotal, 0, i, newMapping, newOptions)
 				if *_total == *totalOptions {
 					graph.DepruneLinks(linksToDeprune)
-					fmt.Println("Returning out!!!")
+					//fmt.Println("Returning out!!!")
 					return
 				}
 				//graph.Prune(linksToDeprune)
 				///////////////////////////////////////// Why have I used -- here?!!
 				//*_total--
 				//tempIndex++
-				fmt.Println("tempIndex is", tempIndex, "options[index] is", options[index], "mapping[index] is", mapping[index])
+
+				//fmt.Println("tempIndex is", tempIndex, "options[index] is", options[index], "mapping[index] is", mapping[index])
+
 				//if tempIndex == options[index] {
 				//	fmt.Println("Ready to move to the next mapping node, and deprune the links.")
 				//	for _, linkk := range linksToDeprune {
@@ -319,7 +381,7 @@ func findOverlappingPaths(reqs []*request.Request, network graph.Topology, pf Pa
 		//	tempIndex = 0
 		//}
 	}
-	fmt.Println("Came out of the for loop.")
+	//fmt.Println("Came out of the for loop.")
 	graph.DepruneLinks(linksToDeprune)
 }
 

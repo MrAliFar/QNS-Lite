@@ -99,10 +99,10 @@ func EG(links []*graph.Link) {
 }
 
 // TODO: This function should also take the round number as an input..........................
-func ES(req *request.Request, network graph.Topology, roundNum int) int {
+func ES(req *request.Request, network graph.Topology, roundNum int, whichPath int) int {
 	var reached bool
 	numReached := 0
-	reached = swap(req, req.Paths[0], network, roundNum)
+	reached = swap(req, req.Paths[whichPath], network, roundNum)
 	if reached == true {
 		numReached++
 	}

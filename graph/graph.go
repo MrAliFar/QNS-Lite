@@ -137,6 +137,15 @@ func Deprune(network Topology) {
 	}
 }
 
+func FindPosition(id []int, nodes []*Node) int {
+	for i, _ := range nodes {
+		if IsEqual(id, nodes[i].ID) {
+			return i
+		}
+	}
+	return -1
+}
+
 //func CopyLinks()
 
 // BuildGraph builds the desired graph.

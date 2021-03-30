@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"example.com/benchmark"
+	"example.com/config"
 )
 
 func main() {
@@ -40,14 +41,61 @@ func main() {
 	//for _, link := range links {
 	//	fmt.Println("After", link.IsActive)
 	//}
+
 	/////////////////////////////////////////////////////// Implement lifetime!!!!!!!!
-	itr := 1
+
+	/*
+		itr := 100
+		maxItr := 5000
+		bm := new(benchmark.Benchmarker)
+		bm.Set(itr, "modified greedy", "grid")
+		bm.Start(itr, maxItr)
+		fmt.Println(*bm)
+		fmt.Println("The average waiting time is:", bm.AverageWaiting(maxItr))
+		fmt.Println("The variance of the waiting time is:", bm.VarianceWaiting(maxItr))
+		config.SetOpportunism(true)
+		bm.SetKeepReqs(true)
+		bm.Start(itr, maxItr)
+		fmt.Println(*bm)
+		fmt.Println("The average waiting time (opportunistic) is:", bm.AverageWaiting(maxItr))
+		fmt.Println("The variance of the waiting time (opportunistic) is:", bm.VarianceWaiting(maxItr))
+	*/
+
+	itrSingleReq := 100
+	itrReqs := 50
 	maxItr := 5000
+	averageNOPP := make([]float64, itrReqs)
+	varianceNOPP := make([]float64, itrReqs)
+	averageOPP := make([]float64, itrReqs)
+	varianceOPP := make([]float64, itrReqs)
 	bm := new(benchmark.Benchmarker)
-	bm.Set(itr, "modified greedy", "grid")
-	bm.Start(itr)
-	fmt.Println(*bm)
-	fmt.Println("The average waiting time is:", bm.AverageWaiting(maxItr))
-	fmt.Println("The variance of the waiting time is:", bm.VarianceWaiting(maxItr))
-	//fmt.Println(*bm)
+	bm.Set(itrSingleReq, "modified greedy", "grid")
+	bm.SetKeepReqs(true)
+	for i := 0; i <= itrReqs-1; i++ {
+		fmt.Println("Average Run:", i)
+		bm.RegenerateReqs()
+		config.SetOpportunism(false)
+		bm.Start(itrSingleReq, maxItr)
+		averageNOPP[i] = bm.AverageWaiting(maxItr)
+		varianceNOPP[i] = bm.VarianceWaiting(maxItr)
+		config.SetOpportunism(true)
+		bm.Start(itrSingleReq, maxItr)
+		averageOPP[i] = bm.AverageWaiting(maxItr)
+		varianceOPP[i] = bm.VarianceWaiting(maxItr)
+	}
+	fmt.Println("Average NOPP waiting time is:", AverageWaiting(averageNOPP, maxItr))
+	fmt.Println("Average OPP waiting time is:", AverageWaiting(averageOPP, maxItr))
+}
+
+func AverageWaiting(nums []float64, maxItr int) float64 {
+	sum := float64(0)
+	meanLength := len(nums)
+	for _, val := range nums {
+		if val >= float64(maxItr) {
+			meanLength -= 1
+			continue
+		}
+		sum += val
+	}
+	return float64(sum) / float64(meanLength)
 }

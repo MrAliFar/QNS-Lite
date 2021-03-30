@@ -18,21 +18,27 @@ type Config struct {
 	hasRecovery       bool
 	hasContention     bool
 	isOpportunistic   bool
+	isMultiPath       bool
 }
 
 // init() initializes the config variable once the package is imported.
 func init() {
-	config.size = 5
+	config.size = 20
 	config.memory = 4
 	config.lifetime = 100
-	config.numRequests = 10
+	config.numRequests = 5
 	config.opportunismDegree = 1
 	config.p_gen = 0.8
 	config.p_swap = 0.8
-	config.aggressiveness = 4
-	config.hasRecovery = true
+	config.hasRecovery = false
 	config.hasContention = true
 	config.isOpportunistic = false
+	config.isMultiPath = true
+	if !config.isMultiPath {
+		config.aggressiveness = 1
+	} else {
+		config.aggressiveness = 6
+	}
 }
 
 // GetConfig returns the configuration.
@@ -48,6 +54,14 @@ func SetConfig(size, memory, lifetime int, p_gen, p_swap float64, hasRecovery bo
 	config.p_gen = p_gen
 	config.p_swap = p_swap
 	config.hasRecovery = hasRecovery
+}
+
+func SetOpportunism(isOpportunistic bool) {
+	config.isOpportunistic = isOpportunistic
+}
+
+func SetPGen(p_gen float64) {
+	config.p_gen = p_gen
 }
 
 // GetSize returns the size of the network.
@@ -99,6 +113,10 @@ func (conf Config) GetHasContention() bool {
 
 func (conf Config) GetIsOpportunistic() bool {
 	return conf.isOpportunistic
+}
+
+func (conf Config) GetIsMultiPath() bool {
+	return conf.isMultiPath
 }
 
 // TODO: CHECK THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

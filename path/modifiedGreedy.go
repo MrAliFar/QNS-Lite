@@ -1,7 +1,6 @@
 package path
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -50,7 +49,7 @@ func (mg *modifiedGreedy) Find(src, dest *graph.Node) (Path, []int, []int, bool)
 	anotherCounter := 0
 	for !mg.curr.IsEqual(dest) {
 		if cntr >= mg.network.GetSize()*mg.network.GetSize() {
-			fmt.Println("Inside Find. Counter overflow.")
+			//fmt.Println("Inside Find. Counter overflow.")
 			return nil, nil, nil, true
 		}
 		cntr = cntr + 1
@@ -60,7 +59,7 @@ func (mg *modifiedGreedy) Find(src, dest *graph.Node) (Path, []int, []int, bool)
 		for check {
 			anotherCounter++
 			if anotherCounter >= mg.network.GetSize()*mg.network.GetSize() {
-				fmt.Println("Inside Find. anotherCounter overflow.")
+				//fmt.Println("Inside Find. anotherCounter overflow.")
 				return nil, nil, nil, true
 			}
 			if len(mg.path) < 2 {
@@ -100,7 +99,7 @@ func (mg *modifiedGreedy) Find(src, dest *graph.Node) (Path, []int, []int, bool)
 		//	fmt.Println(nodede.ID)
 		//}
 		if next == nil {
-			fmt.Println("nil next", mg.path)
+			//fmt.Println("nil next", mg.path)
 			return nil, nil, nil, true
 		}
 		//mg.add(mg.next(dest))
@@ -115,7 +114,7 @@ func (mg *modifiedGreedy) next(dest *graph.Node) (*graph.Node, []*graph.Node, in
 	neighbors, neighIsNil := mg.network.GetNeighbors(mg.curr)
 	//fmt.Println("Inside next - The neighbors are:", neighbors)
 	if neighIsNil {
-		fmt.Println("Nil neighbors!!!!!!!!!!!!!!!!")
+		//fmt.Println("Nil neighbors!!!!!!!!!!!!!!!!")
 		return nil, nil, -1
 	}
 	optimumNode := neighbors[0]
