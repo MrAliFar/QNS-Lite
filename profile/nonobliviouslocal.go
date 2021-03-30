@@ -39,11 +39,6 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 	//var cntr int
 	whichPath := make([]int, len(reqs))
 
-	sources := make([]*graph.Node, len(reqs))
-	for m, req := range reqs {
-		sources[m] = req.Src
-	}
-
 	if !isOpportunistic {
 		for !nol.isFinished {
 			itrCntr++

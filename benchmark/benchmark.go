@@ -27,6 +27,14 @@ func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 		bm.profile = mgp
 		bm.keepReqs = false
 		bm.regenerateReqs = false
+		bm.refreshSources = false
+	} else if prof == profile.NONOBLIVIOUS_LOCAL {
+		nol := new(profile.NonObliviousLocal)
+		nol.Build(topology)
+		bm.profile = nol
+		bm.keepReqs = false
+		bm.regenerateReqs = false
+		bm.refreshSources = true
 	} else {
 		fmt.Println("Benchmark: Caution! The profile is not implemented.")
 	}
@@ -46,8 +54,10 @@ func (bm *Benchmarker) Start(itr int, maxItr int) {
 	for i := 0; i <= itr-1; i++ {
 		//fmt.Println(*bm)
 		//fmt.Println("Iteration", i)
-		for m, req := range sources {
-			reqs[m].Src = sources[m]
+		if bm.refreshSources {
+			for m, req := range sources {
+				reqs[m].Src = sources[m]
+			}
 		}
 		bm.profile.Run(bm.reqs, maxItr)
 		//fmt.Println(*bm)
