@@ -61,8 +61,8 @@ func main() {
 		fmt.Println("The variance of the waiting time (opportunistic) is:", bm.VarianceWaiting(maxItr))
 	*/
 
-	itrSingleReq := 100
-	itrReqs := 50
+	itrSingleReq := 50
+	itrReqs := 10
 	maxItr := 5000
 	averageNOPP := make([]float64, itrReqs)
 	varianceNOPP := make([]float64, itrReqs)
@@ -70,6 +70,7 @@ func main() {
 	varianceOPP := make([]float64, itrReqs)
 	bm := new(benchmark.Benchmarker)
 	bm.Set(itrSingleReq, "modified greedy", "grid")
+	//bm.Set(itrSingleReq, "nonoblivious local", "grid")
 	bm.SetKeepReqs(true)
 	for i := 0; i <= itrReqs-1; i++ {
 		fmt.Println("Average Run:", i)
@@ -78,8 +79,11 @@ func main() {
 		bm.Start(itrSingleReq, maxItr)
 		averageNOPP[i] = bm.AverageWaiting(maxItr)
 		varianceNOPP[i] = bm.VarianceWaiting(maxItr)
+		fmt.Println(*bm)
+		fmt.Println("NOPP Finished.")
 		config.SetOpportunism(true)
 		bm.Start(itrSingleReq, maxItr)
+		fmt.Println(*bm)
 		averageOPP[i] = bm.AverageWaiting(maxItr)
 		varianceOPP[i] = bm.VarianceWaiting(maxItr)
 	}

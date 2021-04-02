@@ -21,7 +21,7 @@ type NonObliviousLocal struct {
 func (nol *NonObliviousLocal) Build(topology string) {
 	nol.RunTime = 1
 	nol.hasRecovery = config.GetConfig().GetHasRecovery()
-	nol.pathAlgorithm = path.MODIFIED_GREEDY
+	nol.pathAlgorithm = path.NONOBLIVIOUS_LOCAL
 	if topology == graph.GRID {
 		grid := new(graph.Grid)
 		grid.Build()
@@ -40,19 +40,35 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 	whichPath := make([]int, len(reqs))
 
 	if !isOpportunistic {
+		nol.isFinished = false
 		for !nol.isFinished {
+			//fmt.Println("NOPP not finished yet.")
 			itrCntr++
 			//numReached = 0
 			if itrCntr == maxItr {
 				break
 			}
 			nol.RunTime++
-			path.ClearReqPaths(reqs)
+			request.ClearReqPaths(reqs)
 			// EG() also handles lifetimes.
 			quantum.EG(links)
-			path.PF(nol.Network, reqs, "nonoblivious local")
+			//fmt.Println("Before path.PF in nonoblivious local.")
+			path.PF(nol.Network, reqs, "nonoblivious local", true)
+			for _, req := range reqs {
+				req.PositionID = req.Src.ID
+				/*fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
+				fmt.Println("PositionID is", req.PositionID, "position is", req.Position)
+				for mm := range req.Paths {
+					fmt.Println("Path number", mm)
+					for nn := range req.Paths[mm] {
+						fmt.Println("The path for request:", req.Paths[mm][nn].ID)
+					}
+				}*/
+			}
+			//fmt.Println("NOPP Found paths")
+			whichPath = make([]int, len(reqs))
 			if !nol.hasRecovery {
-				numReached, whichPath = noRecoveryRun(nol.Network, reqs, whichPath, numReached, nol.RunTime)
+				numReached, _ = noRecoveryRun(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
 			}
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
@@ -61,8 +77,11 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			}
 		}
 	} else {
+		nol.isFinished = false
 		numReached = 0
+		//fmt.Println("Inside OPP. isFinished is:", nol.isFinished)
 		for !nol.isFinished {
+			//fmt.Println("OPP not finished yet.")
 			itrCntr++
 			if itrCntr == maxItr {
 				break
@@ -71,9 +90,30 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			//k := config.GetConfig().GetOpportunismDegree()
 			//isReady := true
 			nol.RunTime++
+			request.ClearReqPaths(reqs)
 			quantum.EG(links)
+			path.PF(nol.Network, reqs, "nonoblivious local", true)
+			for _, req := range reqs {
+				req.PositionID = req.Src.ID
+				/*fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
+				fmt.Println("PositionID is", req.PositionID, "position is", req.Position)
+				for mm := range req.Paths {
+					fmt.Println("Path number", mm)
+					for nn := range req.Paths[mm] {
+						fmt.Println("The path for request:", req.Paths[mm][nn].ID)
+					}
+				}*/
+			}
+			//for n, req := range reqs {
+			//	for m := 0; m < len(req.Paths); m++ {
+			//		for _, node := range req.Paths[m] {
+			//			fmt.Println("req is", n, "path is", m, "Node is", node.ID)
+			//		}
+			//	}
+			//}
+			whichPath = make([]int, len(reqs))
 			if !nol.hasRecovery {
-				numReached, whichPath = noRecoveryRunOPP(nol.Network, reqs, whichPath, numReached, nol.RunTime)
+				numReached, _ = noRecoveryRunOPP(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
 			}
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
@@ -90,6 +130,7 @@ func (nol *NonObliviousLocal) Stop() {
 
 func (nol *NonObliviousLocal) Clear() {
 	nol.isFinished = false
+	//fmt.Println("Cleared! isFinished is", nol.isFinished)
 	nol.RunTime = 1
 	nol.Network.Clear()
 }

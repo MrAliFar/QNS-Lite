@@ -55,7 +55,7 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 			// EG() also handles lifetimes.
 			quantum.EG(links)
 			if !mgp.hasRecovery {
-				numReached, whichPath = noRecoveryRun(mgp.Network, reqs, whichPath, numReached, mgp.RunTime)
+				numReached, whichPath = noRecoveryRun(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
 			}
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
@@ -76,7 +76,7 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 			mgp.RunTime++
 			quantum.EG(links)
 			if !mgp.hasRecovery {
-				numReached, whichPath = noRecoveryRunOPP(mgp.Network, reqs, whichPath, numReached, mgp.RunTime)
+				numReached, whichPath = noRecoveryRunOPP(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
 			}
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {

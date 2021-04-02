@@ -112,6 +112,7 @@ func (nol *nonObliviousLocal) Find(src, dest *graph.Node) (Path, []int, []int, b
 func (nol *nonObliviousLocal) next(dest *graph.Node) (*graph.Node, []*graph.Node, int) {
 	neighbors, neighIsNil := nol.network.GetNeighbors(nol.curr)
 	//fmt.Println("Inside next - The neighbors are:", neighbors)
+	//fmt.Println("Inside next")
 	if neighIsNil {
 		return nil, nil, -1
 	}
@@ -125,6 +126,8 @@ func (nol *nonObliviousLocal) next(dest *graph.Node) (*graph.Node, []*graph.Node
 		}
 		//////// This is the important part.
 		if nol.network.GetLinkBetween(nol.curr, node).IsActive == false {
+			//fmt.Println("Link is not active!")
+			//fmt.Println("nol.curr is", nol.curr.ID, "node is", node.ID)
 			continue
 		}
 		_, neighOfNeighIsNil := nol.network.GetNeighbors(node)
@@ -140,8 +143,42 @@ func (nol *nonObliviousLocal) next(dest *graph.Node) (*graph.Node, []*graph.Node
 			choices[0] = optimumNode
 		}
 	}
-
-	return nil, nil, -1
+	if len(choices) == 1 {
+		return optimumNode, choices, 0
+	} else {
+		options := make([]*graph.Node, 1)
+		//fmt.Println("Choices", len(choices))
+		for _, node := range choices {
+			link := nol.network.GetLinkBetween(nol.curr, node)
+			if link.IsActivated() == true {
+				options = append(options, node)
+				//linkToPrune := make([]*graph.Link, 1)
+				//linkToPrune[0] = link
+				//graph.Prune(linkToPrune)
+				//fmt.Println("This is pruned", link.ID)
+				//return node, choices
+			}
+		}
+		//if len(options) > 1 {
+		//	r := 0
+		//	for r == 0 {
+		//fmt.Println("Gir Eladim!")
+		//		r = rand.Intn(len(options))
+		//	}
+		//	return options[r], choices, r
+		//}
+		//r := 0
+		//for r == 0 {
+		//fmt.Println("Gir Eladim!")
+		r := rand.Intn(len(choices))
+		//}
+		//link := mg.network.GetLinkBetween(mg.curr, choices[0])
+		//linkToPrune := make([]*graph.Link, 1)
+		//linkToPrune[0] = link
+		//graph.Prune(linkToPrune)
+		//fmt.Println("This is pruned", link.ID)
+		return choices[r], choices, r
+	}
 }
 
 func (nol *nonObliviousLocal) add(n *graph.Node) {

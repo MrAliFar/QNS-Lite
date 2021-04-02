@@ -139,8 +139,10 @@ func Deprune(network Topology) {
 
 func FindPosition(id []int, nodes []*Node) int {
 	for i, _ := range nodes {
+		//fmt.Println("Inside FindPosition: ID is:", id)
+		//fmt.Println("Inside FindPosition: node.ID is: ", nodes[i].ID)
 		if IsEqual(id, nodes[i].ID) {
-			return i
+			return i + 1
 		}
 	}
 	return -1

@@ -11,6 +11,7 @@ import (
 
 type Request struct {
 	Src            *graph.Node
+	InitialSrc     *graph.Node
 	Dest           *graph.Node
 	Paths          [][]*graph.Node
 	PositionID     []int
@@ -46,10 +47,13 @@ func genRequests(N int, ids [][]int, priority []int, topology string, roundNum i
 			}
 			reqs[i] = new(Request)
 			reqs[i].Src = new(graph.Node)
+			reqs[i].InitialSrc = new(graph.Node)
 			reqs[i].Dest = new(graph.Node)
 			reqs[i].Src.ID = make([]int, 2)
+			reqs[i].InitialSrc.ID = make([]int, 2)
 			reqs[i].Dest.ID = make([]int, 2)
 			reqs[i].Src = graph.MakeNode(ids[r[0]], config.GetConfig().GetMemory())
+			reqs[i].InitialSrc = graph.MakeNode(ids[r[0]], config.GetConfig().GetMemory())
 			reqs[i].Dest = graph.MakeNode(ids[r[1]], config.GetConfig().GetMemory())
 			reqs[i].PositionID = make([]int, 1)
 			reqs[i].Position = 1
@@ -98,6 +102,7 @@ func RG(N int, ids [][]int, priority []int, topology string, roundNum int) ([]*R
 
 func ClearReq(req *Request) {
 	req.Position = 1
+	req.PositionID = req.Src.ID
 	req.HasReached = false
 	req.CanMove = false
 }

@@ -23,13 +23,13 @@ type Config struct {
 
 // init() initializes the config variable once the package is imported.
 func init() {
-	config.size = 20
-	config.memory = 4
-	config.lifetime = 100
-	config.numRequests = 5
+	config.size = 5
+	config.memory = 6
+	config.lifetime = 100000
+	config.numRequests = 50
 	config.opportunismDegree = 1
-	config.p_gen = 0.8
-	config.p_swap = 0.8
+	config.p_gen = 0.1
+	config.p_swap = 1
 	config.hasRecovery = false
 	config.hasContention = true
 	config.isOpportunistic = false

@@ -44,7 +44,7 @@ func BuildPathFinder(algorithm string, network graph.Topology) PathFinder {
 	return nil
 }
 
-func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
+func PF(network graph.Topology, reqs []*request.Request, algorithm string, ignoreLeftOvers bool) {
 	pf := BuildPathFinder(algorithm, network)
 	hasContention := config.GetConfig().GetHasContention()
 	leftOverReqs := make([]*request.Request, 0)
@@ -54,6 +54,7 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 		if !hasContention {
 			//fmt.Println("Hi, I do not have contention!")
 			for j := 1; j <= aggressiveness; j++ {
+				//fmt.Println("j is", j)
 				if j == 1 {
 					//fmt.Println("Hi, I do not have contention!, j = 1")
 					nodes, _, _, _ := pf.Find(req.Src, req.Dest)
@@ -76,6 +77,7 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 				//fmt.Println("Hi, I do not have contention! Just pruned!")
 				pf.Clear()
 			}
+			//fmt.Println("Out of j for")
 			if len(req.Paths[0]) == 0 {
 				leftOverReqs = append(leftOverReqs, req)
 			}
@@ -91,11 +93,16 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 					}
 				}
 			}
+			//fmt.Println("before continue")
 			continue
 		}
+		//fmt.Println("out of contention")
 		//fmt.Println("PF - request number", i)
 		nodes, mapping, options, mappingIsNull := pf.Find(req.Src, req.Dest)
 		pf.Clear()
+		if len(nodes) == 0 {
+			//fmt.Println("Null path found.")
+		}
 		//fmt.Println("mapping is", mapping)
 		//fmt.Println("first path is")
 
@@ -195,6 +202,9 @@ func PF(network graph.Topology, reqs []*request.Request, algorithm string) {
 		//}
 	}
 	graph.Deprune(network)
+	if ignoreLeftOvers {
+		return
+	}
 	leftOverCntr := 0
 	//fmt.Println("The length of the leftover requests is:", len(leftOverReqs))
 	for len(leftOverReqs) > 0 {

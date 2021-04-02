@@ -9,9 +9,12 @@ import (
 )
 
 type Benchmarker struct {
-	keepReqs         bool
-	regenerateReqs   bool
-	refreshSources   bool
+	keepReqs       bool
+	regenerateReqs bool
+	refreshSources bool
+	// ignoreLeftOvers deals with the leftover requests when looking for paths. It allows us to
+	// prevent infinite loops.
+	ignoreLeftOvers  bool
 	Throughput       []float64
 	TotalWaitingTime []int
 	profile          profile.Profile
@@ -28,6 +31,7 @@ func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 		bm.keepReqs = false
 		bm.regenerateReqs = false
 		bm.refreshSources = false
+		bm.ignoreLeftOvers = false
 	} else if prof == profile.NONOBLIVIOUS_LOCAL {
 		nol := new(profile.NonObliviousLocal)
 		nol.Build(topology)
@@ -35,6 +39,7 @@ func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 		bm.keepReqs = false
 		bm.regenerateReqs = false
 		bm.refreshSources = true
+		bm.ignoreLeftOvers = true
 	} else {
 		fmt.Println("Benchmark: Caution! The profile is not implemented.")
 	}
@@ -44,30 +49,30 @@ func (bm *Benchmarker) Start(itr int, maxItr int) {
 	///////////////////////// This might be unnecessary, since now we have the regenerateReqs()
 	///////////////////////// function.
 	if !bm.keepReqs {
-		reqs := profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm())
+		reqs := profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
 		bm.reqs = reqs
-	}
-	sources := make([]*graph.Node, len(reqs))
-	for m, req := range reqs {
-		sources[m] = req.Src
 	}
 	for i := 0; i <= itr-1; i++ {
 		//fmt.Println(*bm)
 		//fmt.Println("Iteration", i)
-		if bm.refreshSources {
-			for m, req := range sources {
-				reqs[m].Src = sources[m]
-			}
-		}
+		//if bm.refreshSources {
+		//	for m, _ := range bm.reqs {
+		//		bm.reqs[m].Src = bm.reqs[m].InitialSrc
+		//	}
+		//}
 		bm.profile.Run(bm.reqs, maxItr)
 		//fmt.Println(*bm)
 		bm.TotalWaitingTime[i] = bm.profile.GetRunTime()
 		bm.profile.Clear()
 		for _, req := range bm.reqs {
 			request.ClearReq(req)
+			if bm.refreshSources {
+				req.Src = req.InitialSrc
+			}
 		}
 		//fmt.Println("GOTCHA!", *bm)
 	}
+	bm.profile.Clear()
 	bm.profile.Stop()
 }
 
@@ -76,7 +81,7 @@ func (bm *Benchmarker) SetKeepReqs(keepReqs bool) {
 }
 
 func (bm *Benchmarker) RegenerateReqs() {
-	bm.reqs = profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm())
+	bm.reqs = profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
 }
 
 func (bm *Benchmarker) AverageWaiting(maxItr int) float64 {
