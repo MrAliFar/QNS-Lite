@@ -16,11 +16,11 @@ replace example.com/profile => ../profile
 
 replace example.com/benchmark => ../benchmark
 
+replace example.com/log => ../log
+
+replace example.com/utils => ../utils
+
 require (
 	example.com/benchmark v0.0.0-00010101000000-000000000000
 	example.com/config v0.0.0-00010101000000-000000000000
-	example.com/graph v0.0.0-00010101000000-000000000000
-	example.com/path v0.0.0-00010101000000-000000000000
-	example.com/quantum v0.0.0-00010101000000-000000000000
-	example.com/request v0.0.0-00010101000000-000000000000
 )

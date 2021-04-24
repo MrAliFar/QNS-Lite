@@ -10,34 +10,39 @@ type Config struct {
 	lifetime    int
 	numRequests int
 	// The number of paths each request tries to reserve for itself.
-	aggressiveness int
-	// The degree of opportunism
-	opportunismDegree int
-	p_gen             float64
-	p_swap            float64
-	hasRecovery       bool
-	hasContention     bool
-	isOpportunistic   bool
-	isMultiPath       bool
+	aggressiveness         int
+	recoveryAggressiveness int
+	opportunismDegree      int
+	recoverySpan           int
+	p_gen                  float64
+	p_swap                 float64
+	hasRecovery            bool
+	recoveryHasContention  bool
+	hasContention          bool
+	isOpportunistic        bool
+	isMultiPath            bool
 }
 
 // init() initializes the config variable once the package is imported.
 func init() {
 	config.size = 5
 	config.memory = 6
-	config.lifetime = 100000
+	config.lifetime = 30
 	config.numRequests = 50
 	config.opportunismDegree = 1
-	config.p_gen = 0.1
+	config.recoverySpan = 2
+	config.p_gen = 0.7
 	config.p_swap = 1
 	config.hasRecovery = false
 	config.hasContention = true
+	config.recoveryHasContention = true
 	config.isOpportunistic = false
 	config.isMultiPath = true
+	config.recoveryAggressiveness = 3
 	if !config.isMultiPath {
 		config.aggressiveness = 1
 	} else {
-		config.aggressiveness = 6
+		config.aggressiveness = 3
 	}
 }
 
@@ -99,8 +104,16 @@ func (conf Config) GetAggressiveness() int {
 	return conf.aggressiveness
 }
 
+func (conf Config) GetRecoveryAggressiveness() int {
+	return conf.recoveryAggressiveness
+}
+
 func (conf Config) GetOpportunismDegree() int {
 	return conf.opportunismDegree
+}
+
+func (conf Config) GetRecoverySpan() int {
+	return conf.recoverySpan
 }
 
 func (conf Config) GetHasRecovery() bool {
@@ -109,6 +122,10 @@ func (conf Config) GetHasRecovery() bool {
 
 func (conf Config) GetHasContention() bool {
 	return conf.hasContention
+}
+
+func (conf Config) GetRecoveryHasContention() bool {
+	return conf.recoveryHasContention
 }
 
 func (conf Config) GetIsOpportunistic() bool {
@@ -122,4 +139,8 @@ func (conf Config) GetIsMultiPath() bool {
 // TODO: CHECK THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 func (conf *Config) SetAggressiveness(aggressiveness int) {
 	conf.aggressiveness = aggressiveness
+}
+
+func SetAggressiveness(aggressiveness int) {
+	config.aggressiveness = aggressiveness
 }

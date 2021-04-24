@@ -3,7 +3,6 @@ package benchmark
 import (
 	"fmt"
 
-	"example.com/config"
 	"example.com/profile"
 	"example.com/request"
 )
@@ -40,6 +39,14 @@ func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 		bm.regenerateReqs = false
 		bm.refreshSources = true
 		bm.ignoreLeftOvers = true
+	} else if prof == profile.QPASS {
+		qpass := new(profile.QPass)
+		qpass.Build(topology)
+		bm.profile = qpass
+		bm.keepReqs = false
+		bm.regenerateReqs = false
+		bm.refreshSources = false
+		bm.ignoreLeftOvers = false
 	} else {
 		fmt.Println("Benchmark: Caution! The profile is not implemented.")
 	}
@@ -49,7 +56,8 @@ func (bm *Benchmarker) Start(itr int, maxItr int) {
 	///////////////////////// This might be unnecessary, since now we have the regenerateReqs()
 	///////////////////////// function.
 	if !bm.keepReqs {
-		reqs := profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
+		//reqs := profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
+		reqs := bm.profile.GenRequests(bm.ignoreLeftOvers)
 		bm.reqs = reqs
 	}
 	for i := 0; i <= itr-1; i++ {
@@ -81,7 +89,8 @@ func (bm *Benchmarker) SetKeepReqs(keepReqs bool) {
 }
 
 func (bm *Benchmarker) RegenerateReqs() {
-	bm.reqs = profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
+	//bm.reqs = bm.profile.GenRequests(config.GetConfig().GetNumRequests(), bm.profile.GetNetwork(), config.GetConfig().GetIsMultiPath(), bm.profile.GetPathAlgorithm(), bm.ignoreLeftOvers)
+	bm.reqs = bm.profile.GenRequests(bm.ignoreLeftOvers)
 }
 
 func (bm *Benchmarker) AverageWaiting(maxItr int) float64 {

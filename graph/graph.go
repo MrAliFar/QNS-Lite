@@ -1,5 +1,7 @@
 package graph
 
+import "example.com/config"
+
 //import "fmt"
 
 // The constant variables for graph topology
@@ -137,6 +139,19 @@ func Deprune(network Topology) {
 	}
 }
 
+func ReservePath(path []*Node, network Topology, reservation int) {
+	for i := 1; i < len(path); i++ {
+		network.GetLinkBetween(path[i], path[i-1]).IsReserved = true
+		network.GetLinkBetween(path[i], path[i-1]).Reservation = reservation
+	}
+}
+
+func UnreservePath(path []*Node, network Topology) {
+	for i := 1; i < len(path); i++ {
+		network.GetLinkBetween(path[i], path[i-1]).IsReserved = false
+		network.GetLinkBetween(path[i], path[i-1]).Reservation = -1
+	}
+}
 func FindPosition(id []int, nodes []*Node) int {
 	for i, _ := range nodes {
 		//fmt.Println("Inside FindPosition: ID is:", id)
@@ -146,6 +161,25 @@ func FindPosition(id []int, nodes []*Node) int {
 		}
 	}
 	return -1
+}
+
+func FindPrecedingRecoveryPoint(path []*Node, index int, recoverySpan int) int {
+	// FindPosition() adds 1 to the index, so we subtract it here.
+	node := path[index]
+	pos := FindPosition(node.ID, path) - 1
+	// Dividing int to int will return the quotient :)
+	return (pos / recoverySpan) * recoverySpan
+}
+
+func NumRecoveryIndex(len int) []int {
+	indices := make([]int, 1)
+	curr := 0
+	recSpan := config.GetConfig().GetRecoverySpan()
+	for curr < len {
+		curr += recSpan
+		indices = append(indices, curr)
+	}
+	return indices
 }
 
 //func CopyLinks()

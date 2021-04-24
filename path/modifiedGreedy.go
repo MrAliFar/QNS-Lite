@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"example.com/graph"
+	"example.com/utils"
 )
 
 type modifiedGreedy struct {
@@ -71,9 +72,36 @@ func (mg *modifiedGreedy) Find(src, dest *graph.Node) (Path, []int, []int, bool)
 			temp, tempChoices, _ := mg.next(dest)
 			next = temp
 			choices = tempChoices
+			if next == nil {
+				break
+			}
+			if graph.IsEqual(next.ID, mg.path[len(mg.path)-2].ID) {
+				//fmt.Println("Find modifiedGreedy - AHAAAAAAAAAAAAAAAAAAAAAAAAA!")
+				//fmt.Println("next.ID is", next.ID)
+				//fmt.Println("The node before curr is", mg.path[len(mg.path)-2].ID)
+				//fmt.Println("curr is", mg.curr)
+			}
 			if !graph.IsEqual(next.ID, mg.path[len(mg.path)-2].ID) {
 				////////////////////////////////////// Maybe I can do some pruning here.
 				check = false
+			}
+		}
+
+		if len(choices) > 1 {
+			if len(mg.path) >= 2 {
+				//fmt.Println("Check here - 55555555555555555555555555555555555555555555555555555555")
+				//for _, choiceNode := range choices {
+				//	fmt.Println("node is", choiceNode.ID)
+				//}
+				for choiceIndex, choiceNode := range choices {
+					if graph.IsEqual(choiceNode.ID, mg.path[len(mg.path)-2].ID) {
+						//fmt.Println("poxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", choiceNode.ID)
+						choices = utils.RemoveNode(choices, choiceIndex)
+					}
+				}
+				//for _, choiceNode := range choices {
+				//	fmt.Println("after - node is", choiceNode.ID)
+				//}
 			}
 		}
 		//fmt.Println("next is", next.ID, "last is", mg.path[len(mg.path)-1])
@@ -107,6 +135,9 @@ func (mg *modifiedGreedy) Find(src, dest *graph.Node) (Path, []int, []int, bool)
 		mg.curr = mg.path[len(mg.path)-1]
 	}
 	//fmt.Println("Found Path - inside find: ", mg.path)
+	//for _, nodede := range mg.path {
+	//	fmt.Println(nodede.ID)
+	//}
 	return mg.path, mapping, options, isMappingNil
 }
 
@@ -119,14 +150,28 @@ func (mg *modifiedGreedy) next(dest *graph.Node) (*graph.Node, []*graph.Node, in
 	}
 	optimumNode := neighbors[0]
 	tempNode := optimumNode
-	choices := make([]*graph.Node, 1)
-	choices[0] = optimumNode
+	optimumNeighOfNeigh, optimumNeighOfNeighIsNil := mg.network.GetNeighbors(optimumNode)
+	choices := make([]*graph.Node, 0)
+	if !optimumNeighOfNeighIsNil && len(optimumNeighOfNeigh) > 1 {
+		choices = append(choices, optimumNode)
+	}
+	//choices[0] = optimumNode
 	for _, node := range neighbors {
 		if graph.IsEqual(node.ID, tempNode.ID) {
+			//optimumNeighOfNeigh, optimumNeighOfNeighIsNil := mg.network.GetNeighbors(node)
+			//if optimumNeighOfNeighIsNil || len(optimumNeighOfNeigh) == 1 {
+			//	choices = make([]*graph.Node, 0)
+			//}
 			continue
 		}
-		_, neighOfNeighIsNil := mg.network.GetNeighbors(node)
-		if neighOfNeighIsNil {
+		neighOfNeigh, neighOfNeighIsNil := mg.network.GetNeighbors(node)
+		if neighOfNeighIsNil || len(neighOfNeigh) == 1 {
+			//fmt.Println("modifiedGreedy.go path neighOfNeigh: OOOOOOOOOOOOOOOOOOOOOOOPS!!!!!!!!")
+			continue
+		}
+		/////////////////// Added this to solve one strange behavior of findRecoveryPaths.
+		/////////////////// IMPORTANT!!!!!!!!!!!!!
+		if mg.network.Distance(node, dest, "hop") > mg.network.Distance(mg.curr, dest, "hop") {
 			continue
 		}
 		if mg.network.Distance(node, dest, "hop") == mg.network.Distance(optimumNode, dest, "hop") {
@@ -137,6 +182,9 @@ func (mg *modifiedGreedy) next(dest *graph.Node) (*graph.Node, []*graph.Node, in
 			choices = make([]*graph.Node, 1)
 			choices[0] = optimumNode
 		}
+	}
+	if len(choices) == 0 {
+		return nil, nil, -1
 	}
 	if len(choices) == 1 {
 		return optimumNode, choices, 0

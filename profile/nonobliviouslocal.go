@@ -19,7 +19,7 @@ type NonObliviousLocal struct {
 }
 
 func (nol *NonObliviousLocal) Build(topology string) {
-	nol.RunTime = 1
+	nol.RunTime = 0
 	nol.hasRecovery = config.GetConfig().GetHasRecovery()
 	nol.pathAlgorithm = path.NONOBLIVIOUS_LOCAL
 	if topology == graph.GRID {
@@ -29,6 +29,41 @@ func (nol *NonObliviousLocal) Build(topology string) {
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}
+}
+
+func (nol *NonObliviousLocal) GenRequests(ignoreLeftOvers bool) []*request.Request {
+	numRequests := config.GetConfig().GetNumRequests()
+	var priority []int
+	priority = make([]int, numRequests)
+	// Priority for the requests
+	for i := 0; i < numRequests; i++ {
+		priority[i] = 1
+	}
+	ids := nol.Network.GetNodeIDs()
+	reqs, err := request.RG(numRequests, ids, priority, nol.Network.GetType(), 1)
+	if err != nil {
+		fmt.Println("Profile genRequests: Error in request generation!", err)
+		return nil
+	}
+	//fmt.Println("Inside profile.GenRequests, behind path.PF")
+	path.PF(nol.Network, reqs, nol.pathAlgorithm, ignoreLeftOvers)
+	//fmt.Println("Inside profile.GenRequests, after path.PF")
+
+	/*for _, req := range reqs {
+		n1 := req.Src
+		n2 := req.Dest
+		fmt.Println(*n1)
+		fmt.Println(*n2)
+		fmt.Println(len(req.Paths[0]))
+		lenn := len(req.Paths)
+		for i := 0; i <= lenn-1; i++ {
+			for _, nodede := range req.Paths[i] {
+				fmt.Println("The next node for path", i+1)
+				fmt.Println(*nodede)
+			}
+		}
+	}*/
+	return reqs
 }
 
 func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
@@ -53,7 +88,15 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			// EG() also handles lifetimes.
 			quantum.EG(links)
 			//fmt.Println("Before path.PF in nonoblivious local.")
-			path.PF(nol.Network, reqs, "nonoblivious local", true)
+			pathlessReqs := make([]*request.Request, 0)
+			for _, req := range reqs {
+				if req.HasReached {
+					continue
+				}
+				pathlessReqs = append(pathlessReqs, req)
+			}
+			//path.PF(nol.Network, reqs, "nonoblivious local", true)
+			path.PF(nol.Network, pathlessReqs, "nonoblivious local", true)
 			for _, req := range reqs {
 				req.PositionID = req.Src.ID
 				/*fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
@@ -92,7 +135,15 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			nol.RunTime++
 			request.ClearReqPaths(reqs)
 			quantum.EG(links)
-			path.PF(nol.Network, reqs, "nonoblivious local", true)
+			pathlessReqs := make([]*request.Request, 0)
+			for _, req := range reqs {
+				if req.HasReached {
+					continue
+				}
+				pathlessReqs = append(pathlessReqs, req)
+			}
+			//path.PF(nol.Network, reqs, "nonoblivious local", true)
+			path.PF(nol.Network, pathlessReqs, "nonoblivious local", true)
 			for _, req := range reqs {
 				req.PositionID = req.Src.ID
 				/*fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
@@ -131,7 +182,7 @@ func (nol *NonObliviousLocal) Stop() {
 func (nol *NonObliviousLocal) Clear() {
 	nol.isFinished = false
 	//fmt.Println("Cleared! isFinished is", nol.isFinished)
-	nol.RunTime = 1
+	nol.RunTime = 0
 	nol.Network.Clear()
 }
 

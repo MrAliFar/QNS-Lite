@@ -14,6 +14,8 @@ replace example.com/quantum => ../quantum
 
 replace example.com/request => ../request
 
+replace example.com/log => ../log
+
 require (
 	example.com/config v0.0.0-00010101000000-000000000000
 	example.com/graph v0.0.0-00010101000000-000000000000
