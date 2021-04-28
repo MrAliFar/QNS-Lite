@@ -1,6 +1,7 @@
 package quantum
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -22,11 +23,13 @@ var p_gen, p_swap float64
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	p_gen = config.GetConfig().GetPGen()
+	fmt.Println("quantum init. p_gen is", p_gen)
 	p_swap = config.GetConfig().GetPSwap()
 }
 
 func genEntanglement(links []*graph.Link) {
 	lifetime := config.GetConfig().GetLifetime()
+	p_gen = config.GetConfig().GetPGen()
 	//var r float64
 	for _, link := range links {
 		if link.IsActive == true {
