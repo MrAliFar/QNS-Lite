@@ -160,7 +160,8 @@ func ES(req *request.Request, network graph.Topology, roundNum int, whichPath in
 		//fmt.Println("quantum ES - after recovery swap. auxiliaryReq.Position is", auxiliaryReq.Position)
 		//fmt.Println("quantum ES - after recovery swap. auxiliaryReq.PositionID is", auxiliaryReq.PositionID)
 		//fmt.Println("quantum ES - after recovery swap. req.Dest.ID is", req.Dest.ID)
-		if !graph.IsEqual(auxiliaryReq.PositionID, req.Dest.ID) {
+		//if !graph.IsEqual(auxiliaryReq.PositionID, req.Dest.ID) {
+		if !graph.IsEqual(auxiliaryReq.PositionID, req.Paths[whichPath][len(req.Paths[whichPath])-1].ID) {
 			reached = false
 			req.HasReached = false
 		} else {
@@ -174,10 +175,12 @@ func ES(req *request.Request, network graph.Topology, roundNum int, whichPath in
 			///////////// The next line is added to compensate for the positionID when the
 			///////////// recovery is finished successfully, since the current system
 			///////////// falls one index behind when handling position and positionID.
+			//fmt.Println("AHAAAAAAAAAAAAAAAAAA - last recovery finished.")
 			req.PositionID = req.RecoveryPaths[whichPath][req.RecoveryPathCursor][req.RecoveryPathIndex][len(req.RecoveryPaths[whichPath][req.RecoveryPathCursor][req.RecoveryPathIndex])-1].ID
 			req.IsRecovering = false
 			req.CanMoveRecovery = false
 			//fmt.Println("quantum ES - checking the auxiliaryReq. auxiliaryReq.Position is", auxiliaryReq.Position)
+			//fmt.Println("quantum ES - Checking the auxiliaryReq. req.PositionID is", req.PositionID)
 			//fmt.Println("quantum ES - Checking the auxiliaryReq. req.PositionID is", req.PositionID)
 			//for _, nodede := range req.Paths[whichPath] {
 			//	fmt.Println("The path is", nodede.ID)
@@ -189,6 +192,11 @@ func ES(req *request.Request, network graph.Topology, roundNum int, whichPath in
 			req.RecoveryPosition = 1
 			//fmt.Println("quantum ES - req.Position after graph.FindPosition is", req.Position)
 			graph.UnreservePath(req.RecoveryPaths[whichPath][req.RecoveryPathCursor][req.RecoveryPathIndex], network)
+		}
+		if req.Position == len(req.Paths[whichPath])-1 {
+			req.HasReached = true
+			req.ServingTime = roundNum
+			reached = true
 		}
 	}
 	if reached == true {

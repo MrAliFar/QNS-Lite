@@ -97,7 +97,7 @@ func (bm *Benchmarker) AverageWaiting(maxItr int) float64 {
 	sum := 0
 	meanLength := len(bm.TotalWaitingTime)
 	for _, val := range bm.TotalWaitingTime {
-		if val >= maxItr {
+		if val >= maxItr-1 {
 			meanLength -= 1
 			continue
 		}
@@ -111,7 +111,7 @@ func (bm *Benchmarker) VarianceWaiting(maxItr int) float64 {
 	ave := bm.AverageWaiting(maxItr)
 	varLength := len(bm.TotalWaitingTime)
 	for _, val := range bm.TotalWaitingTime {
-		if val >= maxItr {
+		if val >= maxItr-1 {
 			varLength--
 			continue
 		}

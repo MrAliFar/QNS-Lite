@@ -28,6 +28,10 @@ func (mgp *ModifiedGreedyProfile) Build(topology string) {
 		grid := new(graph.Grid)
 		grid.Build()
 		mgp.Network = grid
+		//} else if topology == graph.RING {
+		//ring := new(graph.Ring)
+		//ring.Build()
+		//mgp.Network = ring
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}

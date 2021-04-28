@@ -416,6 +416,7 @@ func (grid *Grid) Distance(n1, n2 *Node, measure string) int {
 	}
 	return -1
 }
+
 func (grid *Grid) GetType() string {
 	return grid.Type
 }

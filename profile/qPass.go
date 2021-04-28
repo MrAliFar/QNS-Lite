@@ -26,6 +26,10 @@ func (qpass *QPass) Build(topology string) {
 		grid := new(graph.Grid)
 		grid.Build()
 		qpass.Network = grid
+		//} else if topology == graph.RING {
+		//ring := new(graph.Ring)
+		//ring.Build()
+		//qpass.Network = ring
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}
@@ -107,7 +111,7 @@ func (qpass *QPass) Run(reqs []*request.Request, maxItr int) {
 	} else {
 		qpass.isFinished = false
 		//// Uncomment!!!!
-		//numReached = 0
+		numReached = 0
 		for !qpass.isFinished {
 			itrCntr++
 			if itrCntr == maxItr {
@@ -119,15 +123,15 @@ func (qpass *QPass) Run(reqs []*request.Request, maxItr int) {
 			qpass.RunTime++
 			quantum.EG(links)
 			if !qpass.hasRecovery {
-				//numReached, whichPath = RecoveryRunOPP(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
+				numReached, whichPath = recoveryRunOPP(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
 			}
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 
 			/////// Uncomment!!!
-			//if numReached == len(reqs) {
-			//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-			qpass.isFinished = true
-			//}
+			if numReached == len(reqs) {
+				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				qpass.isFinished = true
+			}
 		}
 	}
 }

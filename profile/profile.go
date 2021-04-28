@@ -203,6 +203,7 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 	//whichPath := make([]int, len(reqs))
 	var cntr int
 	for reqNum, req := range reqs {
+		//fmt.Println("Beginning - reqNum is", reqNum, "req.Position is", req.Position, "req.PositionID is", req.PositionID, "req.Src is", req.Src.ID, "req.Dest is", req.Dest.ID)
 		oppCntr = 0
 		if req.CanMove {
 			for i := 1; i <= req.Position-1; i++ {
@@ -229,11 +230,13 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 		}
 		// req.Position starts from 1. Check this!!!!!!!!!!!!!!!!!!!!!!!!!
 		if !req.CanMove {
-			//fmt.Println("Can't move OPP!")
+			//fmt.Println("Can't move OPP! reqNum is", reqNum)
 			for which, _ := range req.Paths {
 				/////////////////// Fill in here!
 				//fmt.Println("Which is ", which, "req is ", reqNum)
+				oppCntr = 0
 				pos := graph.FindPosition(req.PositionID, req.Paths[which])
+				//fmt.Println("Which is ", which, "pos is ", pos, "len(req.Paths[which])-1 is", len(req.Paths[which])-1)
 				isReady = true
 				//for i := req.Position; i <= len(req.Paths[which])-1; i++ {
 				//////////////////////////// the +1 is very important!!!!!!!!!!!!!!!!!!!!!!!
@@ -279,10 +282,10 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 				}
 			}
 		} else {
-			//fmt.Println("req.CanMove is true OPP.")
+			//fmt.Println("req.CanMove is true OPP. reqNum is", reqNum)
 			//////////// The +1 is very important!!!!!!!!!!!!!!
 			for i := req.Position + 1; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
-				//fmt.Println("Request num", reqNum, "position is", req.Position)
+				//fmt.Println("True canMove - Request num", reqNum, "position is", req.Position, "PositionID is", req.PositionID)
 				link := network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1])
 				//fmt.Println("link is reserved", link.IsReserved)
 				if link.IsReserved == false {
@@ -310,11 +313,12 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 				}
 			}
 		}
-		//fmt.Println("Request", reqNum, oppCntr >= k)
+		//fmt.Println("checking oppCntr >= k - Request", reqNum, oppCntr >= k)
+		//fmt.Println("oppCntr is", oppCntr)
 		if oppCntr >= k {
 			//fmt.Println("It is Ready!")
 			//if !req.CanMove {
-			for i := req.Position; i <= req.Position+oppCntr-1; i++ {
+			for i := req.Position + 1; i <= req.Position+oppCntr-1; i++ {
 				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = true
 				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = reqNum
 			}
@@ -327,13 +331,14 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 			//}
 
 			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
-		} else if (len(req.Paths[whichPath[reqNum]]) - req.Position) <= oppCntr {
+		} else if (len(req.Paths[whichPath[reqNum]]) - req.Position - 1) <= oppCntr {
+			//fmt.Println("Inside else if!")
 			if changeSrc {
 				//fmt.Println("finding position. PositionID is", req.PositionID, "path length is", len(req.Paths[whichPath[reqNum]]))
 				req.Position = graph.FindPosition(req.PositionID, req.Paths[whichPath[reqNum]])
 			}
 			//if !req.CanMove {
-			for i := req.Position; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
+			for i := req.Position + 1; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
 				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = true
 				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = reqNum
 			}
@@ -508,6 +513,218 @@ func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []in
 		isReady = true
 		willRecover = false
 		// changeSrc is for nonoblivious runs
+		if changeSrc {
+			for m := 1; m <= len(req.Paths[whichPath[reqNum]])-1; m++ {
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][m], req.Paths[whichPath[reqNum]][m-1]).IsReserved = false
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][m], req.Paths[whichPath[reqNum]][m-1]).Reservation = -1
+			}
+			req.CanMove = false
+		}
+	}
+	return numReached, whichPath
+}
+
+func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int) {
+	//fmt.Println("Hiaaa OPP!")
+	isReady := true
+	willRecover := false
+	oppCntr := 0
+	k := config.GetConfig().GetOpportunismDegree()
+	//whichPath := make([]int, len(reqs))
+	var cntr int
+	for reqNum, req := range reqs {
+		oppCntr = 0
+		if req.CanMove {
+			for i := 1; i <= req.Position-1; i++ {
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = false
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = -1
+			}
+		}
+		if req.HasReached {
+			// Release the reserved links
+			// Here, req.CanMove is used to release the links, and is set to false
+			// to prevent extra work every time the request enters this if statement.
+			if req.CanMove {
+				for i := 1; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
+					network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = false
+					network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = -1
+				}
+			}
+			req.CanMove = false
+			continue
+		}
+		cntr = 0
+		if len(req.Paths[0]) == 0 {
+			continue
+		}
+		// req.Position starts from 1. Check this!!!!!!!!!!!!!!!!!!!!!!!!!
+		if !req.CanMove {
+			//fmt.Println("Can't move OPP!")
+			for which, _ := range req.Paths {
+				/////////////////// Fill in here!
+				//fmt.Println("Which is ", which, "req is ", reqNum)
+				oppCntr = 0
+				pos := graph.FindPosition(req.PositionID, req.Paths[which])
+				isReady = true
+				//for i := req.Position; i <= len(req.Paths[which])-1; i++ {
+				//////////////////////////// the +1 is very important!!!!!!!!!!!!!!!!!!!!!!!
+				for i := pos; i <= len(req.Paths[which])-1; i++ {
+					//fmt.Println("Inside for. pos is", pos, "which is", which)
+					//fmt.Println("Request num", reqNum, "position is", req.Position)
+					link := network.GetLinkBetween(req.Paths[which][i], req.Paths[which][i-1])
+					//fmt.Println("link is reserved", link.IsReserved)
+					if link.IsReserved == false {
+						//fmt.Println("link not reserved. Link activation is", link.IsActive)
+						//fmt.Println("Link is", link.ID, "link.IsActive is", link.IsActive)
+						isReady = isReady && link.IsActive
+						cntr++
+					} else {
+						if link.Reservation == reqNum || link.Reservation == -1 {
+							//fmt.Println("corresponding reservation.")
+							//fmt.Println("Link is", link.ID, "link.IsActive is", link.IsActive)
+							isReady = isReady && link.IsActive
+							cntr++
+						}
+					}
+					if isReady == true {
+						//fmt.Println("oppCntr increment. oppCntr is:", oppCntr)
+						oppCntr++
+					} else {
+						break
+					}
+					if cntr == 0 {
+						isReady = false
+						break
+					}
+				}
+				if oppCntr >= k {
+					//fmt.Println("oppCntr >= k")
+					//fmt.Println("Reservation success!")
+					//fmt.Println("Run - The req is ", reqNum, "which is ", which)
+					whichPath[reqNum] = which
+					if changeSrc {
+						//fmt.Println("finding position. PositionID is", req.PositionID, "path length is", len(req.Paths[which]))
+						req.Position = graph.FindPosition(req.PositionID, req.Paths[which])
+					}
+					break
+				}
+			}
+		} else {
+			if !req.IsRecovering {
+				//fmt.Println("req.CanMove is true OPP.")
+				//fmt.Println("Not Recovering!!!!", "req is", reqNum)
+				//fmt.Println("req.PositionID is", req.PositionID)
+				//fmt.Println("req.Position is", req.Position)
+				//fmt.Println("len(req.Paths[whichPath[reqNum]])-1 is", len(req.Paths[whichPath[reqNum]])-1)
+				//////////// The +1 is very important!!!!!!!!!!!!!!
+				for i := req.Position + 1; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
+					//fmt.Println("Request num", reqNum, "position is", req.Position)
+					link := network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1])
+					//fmt.Println("link is reserved", link.IsReserved)
+					if link.IsReserved == false {
+						//fmt.Println("link not reserved. Link activation is", link.IsActive)
+						//fmt.Println("Link is", link.ID, "link.IsActive is", link.IsActive)
+						isReady = isReady && link.IsActive
+						cntr++
+					} else {
+						if link.Reservation == reqNum || link.Reservation == -1 {
+							//fmt.Println("corresponding reservation.")
+							//fmt.Println("Link is", link.ID, "link.IsActive is", link.IsActive)
+							isReady = isReady && link.IsActive
+							cntr++
+						}
+					}
+					if !isReady {
+						//fmt.Println("Checking for recovery!")
+						willRecover = checkForRecovery(network, req, reqNum, whichPath[reqNum], req.IsRecovering)
+						//fmt.Println("willRecover is", willRecover)
+						req.IsRecovering = willRecover
+						//isReady = isReady && willRecover
+						if willRecover {
+							isReady = true
+						}
+						break
+					}
+					if isReady == true {
+						//fmt.Println("oppCntr increment. oppCntr is:", oppCntr)
+						oppCntr++
+					} else {
+						break
+					}
+					if cntr == 0 {
+						isReady = false
+						break
+					}
+				}
+			} else {
+				//fmt.Println("Recovering!!!!", "req is", reqNum)
+				isReady = checkForRecovery(network, req, reqNum, whichPath[reqNum], req.IsRecovering)
+			}
+		}
+		//fmt.Println("Request", reqNum, oppCntr >= k)
+		if oppCntr >= k {
+			//fmt.Println("It is Ready!")
+			//if !req.CanMove {
+			for i := req.Position + 1; i <= req.Position+oppCntr-1; i++ {
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = true
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = reqNum
+			}
+			//}
+			req.CanMove = true
+
+			//fmt.Println("Inside noReciveryOPP. reqNum is:", reqNum, "Destination is", req.Dest, "Source is", req.Src, "PositionID is", req.PositionID)
+			//for ii, nodee := range req.Paths[whichPath[reqNum]] {
+			//	fmt.Println("node index is", ii, "node is", nodee.ID)
+			//}
+
+			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+		} else if (len(req.Paths[whichPath[reqNum]]) - req.Position - 1) <= oppCntr {
+			if changeSrc {
+				//fmt.Println("finding position. PositionID is", req.PositionID, "path length is", len(req.Paths[whichPath[reqNum]]))
+				req.Position = graph.FindPosition(req.PositionID, req.Paths[whichPath[reqNum]])
+			}
+			//if !req.CanMove {
+			for i := req.Position + 1; i <= len(req.Paths[whichPath[reqNum]])-1; i++ {
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).IsReserved = true
+				network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).Reservation = reqNum
+			}
+			//}
+			req.CanMove = true
+
+			//fmt.Println("Inside else if no RecoveryOPP. reqNum is:", reqNum, "Destination is", req.Dest, "Source is", req.Src, "PositionID is", req.PositionID)
+			//for ii, nodee := range req.Paths[whichPath[reqNum]] {
+			//	fmt.Println("node index is", ii, "node is", nodee.ID)
+			//}
+
+			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			//fmt.Println("Fill in here. Maybe the remaining links are less than k, but are ready nonetheless.")
+		} else {
+			//fmt.Println("recoveryRunOpp - Before reserving. reqNum is", reqNum)
+			//fmt.Println("recoveryRunOpp - Before reserving. req.Src.ID is", req.Src.ID)
+			//fmt.Println("recoveryRunOpp - Before reserving. req.Dest.ID is", req.Dest.ID)
+			//fmt.Println("recoveryRunOpp - Before reserving. req.PositionID is", req.PositionID)
+			if req.IsRecovering {
+				//fmt.Println("req.IsRecovering is true.")
+				if isReady {
+					//fmt.Println("isReady is true.")
+					if !req.CanMoveRecovery {
+						for i := 1; i <= len(req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex])-1; i++ {
+							network.GetLinkBetween(req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex][i], req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex][i-1]).IsReserved = true
+							network.GetLinkBetween(req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex][i], req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex][i-1]).Reservation = reqNum
+							//fmt.Println("Reserving link: ", network.GetLinkBetween(req.Paths[whichPath[reqNum]][i], req.Paths[whichPath[reqNum]][i-1]).ID, "WhichPath is ", whichPath[reqNum])
+						}
+					}
+					req.CanMoveRecovery = true
+					//fmt.Println("recoveryRunOpp - Before quantum.ES()")
+					numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, true)
+					//fmt.Println("recoveryRunOpp - after quantum.ES(). reqNum is", reqNum)
+					//fmt.Println("recoveryRunOpp - after quantum.ES(). req.Position is", req.Position)
+					//fmt.Println("recoveryRunOpp - after quantum.ES(). req.PositionID is", req.PositionID)
+				}
+			}
+		}
+		isReady = true
+		willRecover = false
 		if changeSrc {
 			for m := 1; m <= len(req.Paths[whichPath[reqNum]])-1; m++ {
 				network.GetLinkBetween(req.Paths[whichPath[reqNum]][m], req.Paths[whichPath[reqNum]][m-1]).IsReserved = false

@@ -7,7 +7,7 @@ import "example.com/config"
 // The constant variables for graph topology
 const (
 	GRID = "grid"
-	RING = "circle"
+	RING = "ring"
 )
 
 // The constant variables for distance measures

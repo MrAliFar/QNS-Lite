@@ -28,11 +28,11 @@ func init() {
 	config.size = 5
 	config.memory = 6
 	config.lifetime = 30
-	config.numRequests = 50
-	config.opportunismDegree = 1
+	config.numRequests = 20
+	config.opportunismDegree = 3
 	config.recoverySpan = 2
-	config.p_gen = 0.7
-	config.p_swap = 1
+	config.p_gen = 0.5
+	config.p_swap = 0.8
 	config.hasRecovery = false
 	config.hasContention = true
 	config.recoveryHasContention = true

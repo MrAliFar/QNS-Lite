@@ -62,16 +62,21 @@ func main() {
 	*/
 
 	itrSingleReq := 100
-	itrReqs := 50
-	maxItr := 100000
+	itrReqs := 30
+	maxItr := 10000
 	averageNOPP := make([]float64, itrReqs)
 	varianceNOPP := make([]float64, itrReqs)
 	averageOPP := make([]float64, itrReqs)
 	varianceOPP := make([]float64, itrReqs)
 	bm := new(benchmark.Benchmarker)
-	bm.Set(itrSingleReq, "modified greedy", "grid")
-	//bm.Set(itrSingleReq, "nonoblivious local", "grid")
+	//bm.Set(itrSingleReq, "modified greedy", "grid")
+	//bm.Set(itrSingleReq, "modified greedy", "ring")
+
+	bm.Set(itrSingleReq, "nonoblivious local", "grid")
+	//bm.Set(itrSingleReq, "nonoblivious local", "ring")
+
 	//bm.Set(itrSingleReq, "qpass", "grid")
+	//bm.Set(itrSingleReq, "qpass", "ring")
 	bm.SetKeepReqs(true)
 	for i := 0; i <= itrReqs-1; i++ {
 		fmt.Println("Average Run:", i)
@@ -80,11 +85,11 @@ func main() {
 		bm.Start(itrSingleReq, maxItr)
 		averageNOPP[i] = bm.AverageWaiting(maxItr)
 		varianceNOPP[i] = bm.VarianceWaiting(maxItr)
-		fmt.Println(*bm)
+		//fmt.Println(*bm)
 		fmt.Println("NOPP Finished.")
 		config.SetOpportunism(true)
 		bm.Start(itrSingleReq, maxItr)
-		//fmt.Println(*bm)
+		fmt.Println(*bm)
 		averageOPP[i] = bm.AverageWaiting(maxItr)
 		varianceOPP[i] = bm.VarianceWaiting(maxItr)
 	}
@@ -96,7 +101,7 @@ func AverageWaiting(nums []float64, maxItr int) float64 {
 	sum := float64(0)
 	meanLength := len(nums)
 	for _, val := range nums {
-		if val >= float64(maxItr) {
+		if val >= float64(maxItr-1) {
 			meanLength -= 1
 			continue
 		}

@@ -26,6 +26,10 @@ func (nol *NonObliviousLocal) Build(topology string) {
 		grid := new(graph.Grid)
 		grid.Build()
 		nol.Network = grid
+		//} else if topology == graph.RING {
+		//ring := new(graph.Ring)
+		//ring.Build()
+		//nol.Network = ring
 	} else {
 		fmt.Println("Profile: Caution! The topology is not implemented.")
 	}
