@@ -80,7 +80,7 @@ func main() {
 	bm.SetKeepReqs(true)
 	for i := 0; i <= itrReqs-1; i++ {
 		fmt.Println("Average Run:", i)
-		bm.RegenerateReqs()
+		bm.RegenerateReqs(itrSingleReq)
 		config.SetOpportunism(false)
 		bm.Start(itrSingleReq, maxItr)
 		averageNOPP[i] = bm.AverageWaiting(maxItr)

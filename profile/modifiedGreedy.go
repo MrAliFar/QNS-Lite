@@ -2,6 +2,8 @@ package profile
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"example.com/config"
 	"example.com/graph"
@@ -17,11 +19,13 @@ type ModifiedGreedyProfile struct {
 	isFinished    bool
 	hasRecovery   bool
 	RunTime       int
+	PriorityLen   int
 	pathAlgorithm string
 }
 
 func (mgp *ModifiedGreedyProfile) Build(topology string) {
 	mgp.RunTime = 0
+	mgp.PriorityLen = 3
 	mgp.hasRecovery = config.GetConfig().GetHasRecovery()
 	mgp.pathAlgorithm = path.MODIFIED_GREEDY
 	if topology == graph.GRID {
@@ -41,10 +45,13 @@ func (mgp *ModifiedGreedyProfile) GenRequests(ignoreLeftOvers bool) []*request.R
 	numRequests := config.GetConfig().GetNumRequests()
 	var priority []int
 	priority = make([]int, numRequests)
+	rand.Seed(time.Now().UTC().UnixNano())
 	// Priority for the requests
 	for i := 0; i < numRequests; i++ {
-		priority[i] = 1
+		//priority[i] = 1
+		priority[i] = rand.Intn(mgp.PriorityLen) + 1
 	}
+	fmt.Println(priority)
 	ids := mgp.Network.GetNodeIDs()
 	reqs, err := request.RG(numRequests, ids, priority, mgp.Network.GetType(), 1)
 	if err != nil {
@@ -166,6 +173,10 @@ func (mgp *ModifiedGreedyProfile) GetNetwork() graph.Topology {
 
 func (mgp *ModifiedGreedyProfile) GetRunTime() int {
 	return mgp.RunTime
+}
+
+func (mgp *ModifiedGreedyProfile) GetPriorityLen() int {
+	return mgp.PriorityLen
 }
 
 func (mgp *ModifiedGreedyProfile) GetHasRecovery() bool {

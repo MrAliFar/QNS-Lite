@@ -7,26 +7,26 @@ import (
 	"example.com/config"
 )
 
-func experiment1(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxItr int) {
+func experiment3(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxItr int) {
 	averageNOPP := make([]float64, itrReqs)
 	varianceNOPP := make([]float64, itrReqs)
 	averageOPP := make([]float64, itrReqs)
 	varianceOPP := make([]float64, itrReqs)
-	p := [10]float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
+	sizes := [11]int{5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	ATWT := make([][]float64, 6)
 	for i := 0; i <= 5; i++ {
-		ATWT[i] = make([]float64, len(p))
+		ATWT[i] = make([]float64, len(sizes))
 	}
 	algos := [3]string{"modified greedy", "nonoblivious local", "qpass"}
 	topologies := [1]string{"grid"}
-	config.SetPSwap(float64(1))
-	config.SetSize(5)
+	config.SetPGen(0.8)
+	config.SetPSwap(float64(0.8))
 	config.SetLifetime(30)
 	config.SetNumRequests(20)
-	for p_genIndex, p_gen := range p {
-		config.SetPGen(p_gen)
-		fmt.Println("p_gen is", p_gen)
-		fmt.Println("config.p_gen is", config.GetConfig().GetPGen())
+	for sizeIndex, size := range sizes {
+		config.SetSize(size)
+		fmt.Println("size is", size)
+		fmt.Println("config.size is", config.GetConfig().GetSize())
 		for algo := 0; algo < 3; algo++ {
 			fmt.Println("algorithm is", algos[algo])
 			bm.Set(itrSingleReq, algos[algo], topologies[0])
@@ -46,14 +46,14 @@ func experiment1(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxIt
 				averageOPP[i] = bm.AverageWaiting(maxItr)
 				varianceOPP[i] = bm.VarianceWaiting(maxItr)
 			}
-			ATWT[2*algo][p_genIndex] = AverageWaiting(averageNOPP, maxItr)
-			ATWT[2*algo+1][p_genIndex] = AverageWaiting(averageOPP, maxItr)
+			ATWT[2*algo][sizeIndex] = AverageWaiting(averageNOPP, maxItr)
+			ATWT[2*algo+1][sizeIndex] = AverageWaiting(averageOPP, maxItr)
 			fmt.Println("Average NOPP waiting time is:", AverageWaiting(averageNOPP, maxItr))
 			fmt.Println("Average OPP waiting time is:", AverageWaiting(averageOPP, maxItr))
 		}
 	}
 	//file, err := os.OpenFile("./Data/experiment1.txt", os.O_APPEND|os.O_WRONLY, 0644)
-	handleFile(ATWT, "./Data/experiment1.txt")
+	handleFile(ATWT, "./Data/experiment3.txt")
 	/*var err = os.Remove("./Data/experiment1.txt")
 	if err != nil {
 		log.Println(err)

@@ -13,7 +13,11 @@ func main() {
 	itrReqs := 30
 	maxItr := 10000
 	bm := new(benchmark.Benchmarker)
-	experiment1(bm, itrReqs, itrSingleReq, maxItr)
+	//experiment1(bm, itrReqs, itrSingleReq, maxItr)
+	//experiment2(bm, itrReqs, itrSingleReq, maxItr)
+	//experiment3(bm, itrReqs, itrSingleReq, maxItr)
+	//experiment4(bm, itrReqs, itrSingleReq, maxItr)
+	experiment5(bm, itrReqs, itrSingleReq, maxItr)
 }
 
 func AverageWaiting(nums []float64, maxItr int) float64 {
@@ -50,7 +54,7 @@ func handleFile(data [][]float64, filePath string) {
 	}
 	defer file.Close()
 	data_String := make([][]string, len(data))
-	for i := 0; i <= 5; i++ {
+	for i := 0; i <= len(data)-1; i++ {
 		data_String[i] = make([]string, len(data[0]))
 	}
 	for i := 0; i < len(data); i++ {

@@ -15,6 +15,7 @@ type NonObliviousLocal struct {
 	isFinished    bool
 	hasRecovery   bool
 	RunTime       int
+	PriorityLen   int
 	pathAlgorithm string
 }
 
@@ -196,6 +197,10 @@ func (nol *NonObliviousLocal) GetNetwork() graph.Topology {
 
 func (nol *NonObliviousLocal) GetRunTime() int {
 	return nol.RunTime
+}
+
+func (nol *NonObliviousLocal) GetPriorityLen() int {
+	return nol.PriorityLen
 }
 
 func (nol *NonObliviousLocal) GetHasRecovery() bool {

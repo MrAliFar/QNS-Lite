@@ -15,6 +15,7 @@ type QPass struct {
 	isFinished    bool
 	hasRecovery   bool
 	RunTime       int
+	PriorityLen   int
 	pathAlgorithm string
 }
 
@@ -152,6 +153,10 @@ func (qpass *QPass) GetNetwork() graph.Topology {
 
 func (qpass *QPass) GetRunTime() int {
 	return qpass.RunTime
+}
+
+func (qpass *QPass) GetPriorityLen() int {
+	return qpass.PriorityLen
 }
 
 func (qpass *QPass) GetHasRecovery() bool {

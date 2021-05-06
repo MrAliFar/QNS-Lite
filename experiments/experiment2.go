@@ -7,7 +7,7 @@ import (
 	"example.com/config"
 )
 
-func experiment1(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxItr int) {
+func experiment2(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxItr int) {
 	averageNOPP := make([]float64, itrReqs)
 	varianceNOPP := make([]float64, itrReqs)
 	averageOPP := make([]float64, itrReqs)
@@ -19,9 +19,9 @@ func experiment1(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxIt
 	}
 	algos := [3]string{"modified greedy", "nonoblivious local", "qpass"}
 	topologies := [1]string{"grid"}
-	config.SetPSwap(float64(1))
+	config.SetPSwap(float64(0.8))
 	config.SetSize(5)
-	config.SetLifetime(30)
+	config.SetLifetime(6)
 	config.SetNumRequests(20)
 	for p_genIndex, p_gen := range p {
 		config.SetPGen(p_gen)
@@ -53,7 +53,7 @@ func experiment1(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxIt
 		}
 	}
 	//file, err := os.OpenFile("./Data/experiment1.txt", os.O_APPEND|os.O_WRONLY, 0644)
-	handleFile(ATWT, "./Data/experiment1.txt")
+	handleFile(ATWT, "./Data/experiment2.txt")
 	/*var err = os.Remove("./Data/experiment1.txt")
 	if err != nil {
 		log.Println(err)

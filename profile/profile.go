@@ -24,6 +24,7 @@ type Profile interface {
 	Clear()
 	GenRequests(ignoreLeftOvers bool) []*request.Request
 	GetRunTime() int
+	GetPriorityLen() int
 	GetHasRecovery() bool
 	GetNetwork() graph.Topology
 	GetPathAlgorithm() string
@@ -204,6 +205,8 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 	var cntr int
 	for reqNum, req := range reqs {
 		//fmt.Println("Beginning - reqNum is", reqNum, "req.Position is", req.Position, "req.PositionID is", req.PositionID, "req.Src is", req.Src.ID, "req.Dest is", req.Dest.ID)
+		//config.SetOpportunismDegree(req.Priority)
+		//k = config.GetConfig().GetOpportunismDegree()
 		oppCntr = 0
 		if req.CanMove {
 			for i := 1; i <= req.Position-1; i++ {

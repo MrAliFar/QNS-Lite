@@ -65,8 +65,28 @@ func SetOpportunism(isOpportunistic bool) {
 	config.isOpportunistic = isOpportunistic
 }
 
+func SetOpportunismDegree(opportunismDegree int) {
+	config.opportunismDegree = opportunismDegree
+}
+
 func SetPGen(p_gen float64) {
 	config.p_gen = p_gen
+}
+
+func SetPSwap(p_swap float64) {
+	config.p_swap = p_swap
+}
+
+func SetSize(size int) {
+	config.size = size
+}
+
+func SetLifetime(lifetime int) {
+	config.lifetime = lifetime
+}
+
+func SetNumRequests(numRequests int) {
+	config.numRequests = numRequests
 }
 
 // GetSize returns the size of the network.
