@@ -15,17 +15,19 @@ import (
 )
 
 type ModifiedGreedyProfile struct {
-	Network       *graph.Grid
-	isFinished    bool
-	hasRecovery   bool
-	RunTime       int
-	PriorityLen   int
-	pathAlgorithm string
+	Network          *graph.Grid
+	isFinished       bool
+	hasRecovery      bool
+	RunTime          int
+	PriorityLen      int
+	LinksWaitingTime []float64
+	pathAlgorithm    string
 }
 
 func (mgp *ModifiedGreedyProfile) Build(topology string) {
 	mgp.RunTime = 0
 	mgp.PriorityLen = 3
+	mgp.LinksWaitingTime = make([]float64, 0)
 	mgp.hasRecovery = config.GetConfig().GetHasRecovery()
 	mgp.pathAlgorithm = path.MODIFIED_GREEDY
 	if topology == graph.GRID {
@@ -51,9 +53,9 @@ func (mgp *ModifiedGreedyProfile) GenRequests(ignoreLeftOvers bool) []*request.R
 		//priority[i] = 1
 		priority[i] = rand.Intn(mgp.PriorityLen) + 1
 	}
-	fmt.Println(priority)
+	//fmt.Println(priority)
 	ids := mgp.Network.GetNodeIDs()
-	reqs, err := request.RG(numRequests, ids, priority, mgp.Network.GetType(), 1)
+	reqs, err := request.RG(numRequests, ids, priority, mgp.Network.GetType(), mgp.RunTime)
 	if err != nil {
 		fmt.Println("Profile genRequests: Error in request generation!", err)
 		return nil
@@ -97,11 +99,12 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			///////////////////////////////// Check the following commented isReady.
 			//isReady := true
 			mgp.RunTime++
 			// EG() also handles lifetimes.
-			quantum.EG(links)
+			quantum.EG(links, mgp.RunTime)
 			/*for rr, req := range reqs {
 				fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
 				fmt.Println("PositionID is", req.PositionID, "position is", req.Position)
@@ -113,8 +116,9 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 				}
 			}*/
 			if !mgp.hasRecovery {
-				numReached, whichPath = noRecoveryRun(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
+				numReached, whichPath, linksWaiting = noRecoveryRun(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
 			}
+			mgp.LinksWaitingTime = append(mgp.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
 				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -130,11 +134,12 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			//numReached = 0
 			//k := config.GetConfig().GetOpportunismDegree()
 			//isReady := true
 			mgp.RunTime++
-			quantum.EG(links)
+			quantum.EG(links, mgp.RunTime)
 			/*for rr, req := range reqs {
 				fmt.Println("req number is", rr, "req source is", req.Src, "req dest is", req.Dest)
 				fmt.Println("PositionID is", req.PositionID, "position is", req.Position)
@@ -146,8 +151,9 @@ func (mgp *ModifiedGreedyProfile) Run(reqs []*request.Request, maxItr int) {
 				}
 			}*/
 			if !mgp.hasRecovery {
-				numReached, whichPath = noRecoveryRunOPP(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
+				numReached, whichPath, linksWaiting = noRecoveryRunOPP(mgp.Network, reqs, whichPath, numReached, mgp.RunTime, false)
 			}
+			mgp.LinksWaitingTime = append(mgp.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
 				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -164,6 +170,7 @@ func (mgp *ModifiedGreedyProfile) Stop() {
 func (mgp *ModifiedGreedyProfile) Clear() {
 	mgp.isFinished = false
 	mgp.RunTime = 0
+	mgp.LinksWaitingTime = make([]float64, 0)
 	mgp.Network.Clear()
 }
 
@@ -177,6 +184,10 @@ func (mgp *ModifiedGreedyProfile) GetRunTime() int {
 
 func (mgp *ModifiedGreedyProfile) GetPriorityLen() int {
 	return mgp.PriorityLen
+}
+
+func (mgp *ModifiedGreedyProfile) GetLinksWaitingTime() []float64 {
+	return mgp.LinksWaitingTime
 }
 
 func (mgp *ModifiedGreedyProfile) GetHasRecovery() bool {

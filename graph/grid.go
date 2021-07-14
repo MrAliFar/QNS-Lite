@@ -31,6 +31,8 @@ func (grid *Grid) Build() {
 func (grid *Grid) Clear() {
 	links := grid.GetLinks()
 	for _, link := range links {
+		link.GenerationTime = 0
+		link.ConsumptionTime = 0
 		link.IsActive = false
 		link.IsReserved = false
 		link.Reservation = -1
@@ -79,6 +81,8 @@ func (grid *Grid) generateLinks() {
 				link = MakeLink(id, 0, false)
 				copy(grid.Links[i][j][k].ID, link.ID)
 				grid.Links[i][j][k].Age = link.Age
+				grid.Links[i][j][k].GenerationTime = 0
+				grid.Links[i][j][k].ConsumptionTime = 0
 				grid.Links[i][j][k].IsActive = link.IsActive
 				grid.Links[i][j][k].IsPruned = link.IsPruned
 				grid.Links[i][j][k].Reservation = link.Reservation

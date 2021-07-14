@@ -17,7 +17,8 @@ func main() {
 	//experiment2(bm, itrReqs, itrSingleReq, maxItr)
 	//experiment3(bm, itrReqs, itrSingleReq, maxItr)
 	//experiment4(bm, itrReqs, itrSingleReq, maxItr)
-	experiment5(bm, itrReqs, itrSingleReq, maxItr)
+	//experiment5(bm, itrReqs, itrSingleReq, maxItr)
+	experiment6(bm, itrReqs, itrSingleReq, maxItr)
 }
 
 func AverageWaiting(nums []float64, maxItr int) float64 {
@@ -32,6 +33,34 @@ func AverageWaiting(nums []float64, maxItr int) float64 {
 	}
 	return float64(sum) / float64(meanLength)
 }
+
+func VarianceWaiting(nums []float64, maxItr int) float64 {
+	sum := float64(0)
+	ave := AverageWaiting(nums, maxItr)
+	varLength := len(nums)
+	for _, val := range nums {
+		if val >= float64(maxItr)-1 {
+			varLength--
+			continue
+		}
+		sum += (float64(val) - ave) * (float64(val) - ave)
+	}
+	return float64(sum) / float64(varLength)
+}
+
+/*func (bm *Benchmarker) VarianceWaiting(maxItr int) float64 {
+	sum := float64(0)
+	ave := bm.AverageWaiting(maxItr)
+	varLength := len(bm.TotalWaitingTime)
+	for _, val := range bm.TotalWaitingTime {
+		if val >= maxItr-1 {
+			varLength--
+			continue
+		}
+		sum += (float64(val) - ave) * (float64(val) - ave)
+	}
+	return float64(sum) / float64(varLength)
+}*/
 
 func handleFile(data [][]float64, filePath string) {
 	var err = os.Remove(filePath)

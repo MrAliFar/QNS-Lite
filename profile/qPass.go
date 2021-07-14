@@ -11,12 +11,13 @@ import (
 )
 
 type QPass struct {
-	Network       *graph.Grid
-	isFinished    bool
-	hasRecovery   bool
-	RunTime       int
-	PriorityLen   int
-	pathAlgorithm string
+	Network          *graph.Grid
+	isFinished       bool
+	hasRecovery      bool
+	RunTime          int
+	PriorityLen      int
+	LinksWaitingTime []float64
+	pathAlgorithm    string
 }
 
 func (qpass *QPass) Build(topology string) {
@@ -45,7 +46,7 @@ func (qpass *QPass) GenRequests(ignoreLeftOvers bool) []*request.Request {
 		priority[i] = 1
 	}
 	ids := qpass.Network.GetNodeIDs()
-	reqs, err := request.RG(numRequests, ids, priority, qpass.Network.GetType(), 1)
+	reqs, err := request.RG(numRequests, ids, priority, qpass.Network.GetType(), qpass.RunTime)
 	if err != nil {
 		fmt.Println("Profile genRequests: Error in request generation!", err)
 		return nil
@@ -93,14 +94,16 @@ func (qpass *QPass) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			///////////////////////////////// Check the following commented isReady.
 			//isReady := true
 			qpass.RunTime++
 			// EG() also handles lifetimes.
-			quantum.EG(links)
+			quantum.EG(links, qpass.RunTime)
 			if !qpass.hasRecovery {
-				numReached, whichPath = RecoveryRun(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
+				numReached, whichPath, linksWaiting = RecoveryRun(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
 			}
+			qpass.LinksWaitingTime = append(qpass.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 
 			//////// Uncomment!!!
@@ -118,14 +121,16 @@ func (qpass *QPass) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			//numReached = 0
 			//k := config.GetConfig().GetOpportunismDegree()
 			//isReady := true
 			qpass.RunTime++
-			quantum.EG(links)
+			quantum.EG(links, qpass.RunTime)
 			if !qpass.hasRecovery {
-				numReached, whichPath = recoveryRunOPP(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
+				numReached, whichPath, linksWaiting = recoveryRunOPP(qpass.Network, reqs, whichPath, numReached, qpass.RunTime, false)
 			}
+			qpass.LinksWaitingTime = append(qpass.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 
 			/////// Uncomment!!!
@@ -144,6 +149,7 @@ func (qpass *QPass) Stop() {
 func (qpass *QPass) Clear() {
 	qpass.isFinished = false
 	qpass.RunTime = 0
+	qpass.LinksWaitingTime = make([]float64, 0)
 	qpass.Network.Clear()
 }
 
@@ -153,6 +159,10 @@ func (qpass *QPass) GetNetwork() graph.Topology {
 
 func (qpass *QPass) GetRunTime() int {
 	return qpass.RunTime
+}
+
+func (qpass *QPass) GetLinksWaitingTime() []float64 {
+	return qpass.LinksWaitingTime
 }
 
 func (qpass *QPass) GetPriorityLen() int {

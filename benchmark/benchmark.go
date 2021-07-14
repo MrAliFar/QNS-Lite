@@ -16,6 +16,7 @@ type Benchmarker struct {
 	ignoreLeftOvers     bool
 	Throughput          []float64
 	TotalWaitingTime    []int
+	LinksWaitingTime    []float64
 	reqsWaitingTime     [][]int
 	priorityWaitingTime [][]int
 	profile             profile.Profile
@@ -25,6 +26,7 @@ type Benchmarker struct {
 func (bm *Benchmarker) Set(itr int, prof string, topology string) {
 	bm.Throughput = make([]float64, itr)
 	bm.TotalWaitingTime = make([]int, itr)
+	bm.LinksWaitingTime = make([]float64, 0)
 	if prof == profile.MODIFIED_GREEDY {
 		mgp := new(profile.ModifiedGreedyProfile)
 		mgp.Build(topology)
@@ -81,16 +83,18 @@ func (bm *Benchmarker) Start(itr int, maxItr int) {
 		bm.profile.Run(bm.reqs, maxItr)
 		//fmt.Println(*bm)
 		bm.TotalWaitingTime[i] = bm.profile.GetRunTime()
+		bm.LinksWaitingTime = bm.profile.GetLinksWaitingTime()
 		for reqIndex, Req := range bm.reqs {
-			bm.reqsWaitingTime[reqIndex][i] = Req.ServingTime
+			bm.reqsWaitingTime[reqIndex][i] = Req.ServingTime - Req.GenerationTime
 			for i := 1; i <= bm.profile.GetPriorityLen(); i++ {
 				if Req.Priority == i {
-					bm.priorityWaitingTime[i-1] = append(bm.priorityWaitingTime[i-1], int(Req.ServingTime/(Req.Priority*bm.profile.GetNetwork().Distance(Req.Src, Req.Dest, "hop"))))
+					bm.priorityWaitingTime[i-1] = append(bm.priorityWaitingTime[i-1], int((Req.ServingTime-Req.GenerationTime)/(Req.Priority*bm.profile.GetNetwork().Distance(Req.Src, Req.Dest, "hop"))))
 					break
 				}
 			}
 		}
 		bm.profile.Clear()
+		//bm.LinksWaitingTime = make([]float64, 0)
 		for _, req := range bm.reqs {
 			request.ClearReq(req)
 			if bm.refreshSources {

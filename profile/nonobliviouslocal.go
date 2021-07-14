@@ -11,12 +11,13 @@ import (
 )
 
 type NonObliviousLocal struct {
-	Network       *graph.Grid
-	isFinished    bool
-	hasRecovery   bool
-	RunTime       int
-	PriorityLen   int
-	pathAlgorithm string
+	Network          *graph.Grid
+	isFinished       bool
+	hasRecovery      bool
+	RunTime          int
+	PriorityLen      int
+	LinksWaitingTime []float64
+	pathAlgorithm    string
 }
 
 func (nol *NonObliviousLocal) Build(topology string) {
@@ -45,7 +46,7 @@ func (nol *NonObliviousLocal) GenRequests(ignoreLeftOvers bool) []*request.Reque
 		priority[i] = 1
 	}
 	ids := nol.Network.GetNodeIDs()
-	reqs, err := request.RG(numRequests, ids, priority, nol.Network.GetType(), 1)
+	reqs, err := request.RG(numRequests, ids, priority, nol.Network.GetType(), nol.RunTime)
 	if err != nil {
 		fmt.Println("Profile genRequests: Error in request generation!", err)
 		return nil
@@ -88,10 +89,11 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			nol.RunTime++
 			request.ClearReqPaths(reqs)
 			// EG() also handles lifetimes.
-			quantum.EG(links)
+			quantum.EG(links, nol.RunTime)
 			//fmt.Println("Before path.PF in nonoblivious local.")
 			pathlessReqs := make([]*request.Request, 0)
 			for _, req := range reqs {
@@ -116,8 +118,9 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			//fmt.Println("NOPP Found paths")
 			whichPath = make([]int, len(reqs))
 			if !nol.hasRecovery {
-				numReached, _ = noRecoveryRun(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
+				numReached, _, linksWaiting = noRecoveryRun(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
 			}
+			nol.LinksWaitingTime = append(nol.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
 				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -134,12 +137,13 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			if itrCntr == maxItr {
 				break
 			}
+			linksWaiting := make([]float64, 0)
 			//numReached = 0
 			//k := config.GetConfig().GetOpportunismDegree()
 			//isReady := true
 			nol.RunTime++
 			request.ClearReqPaths(reqs)
-			quantum.EG(links)
+			quantum.EG(links, nol.RunTime)
 			pathlessReqs := make([]*request.Request, 0)
 			for _, req := range reqs {
 				if req.HasReached {
@@ -169,8 +173,9 @@ func (nol *NonObliviousLocal) Run(reqs []*request.Request, maxItr int) {
 			//}
 			whichPath = make([]int, len(reqs))
 			if !nol.hasRecovery {
-				numReached, _ = noRecoveryRunOPP(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
+				numReached, _, linksWaiting = noRecoveryRunOPP(nol.Network, reqs, whichPath, numReached, nol.RunTime, true)
 			}
+			nol.LinksWaitingTime = append(nol.LinksWaitingTime, linksWaiting...)
 			//fmt.Println("Number of reached::::::::::::::::::::::", numReached)
 			if numReached == len(reqs) {
 				//fmt.Println("REACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -188,6 +193,7 @@ func (nol *NonObliviousLocal) Clear() {
 	nol.isFinished = false
 	//fmt.Println("Cleared! isFinished is", nol.isFinished)
 	nol.RunTime = 0
+	nol.LinksWaitingTime = make([]float64, 0)
 	nol.Network.Clear()
 }
 
@@ -197,6 +203,10 @@ func (nol *NonObliviousLocal) GetNetwork() graph.Topology {
 
 func (nol *NonObliviousLocal) GetRunTime() int {
 	return nol.RunTime
+}
+
+func (nol *NonObliviousLocal) GetLinksWaitingTime() []float64 {
+	return nol.LinksWaitingTime
 }
 
 func (nol *NonObliviousLocal) GetPriorityLen() int {

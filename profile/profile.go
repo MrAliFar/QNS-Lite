@@ -24,6 +24,7 @@ type Profile interface {
 	Clear()
 	GenRequests(ignoreLeftOvers bool) []*request.Request
 	GetRunTime() int
+	GetLinksWaitingTime() []float64
 	GetPriorityLen() int
 	GetHasRecovery() bool
 	GetNetwork() graph.Topology
@@ -64,11 +65,14 @@ func GenRequests(numRequests int, network graph.Topology, isMultiPath bool, algo
 	return reqs
 }
 
-func noRecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int) {
+func noRecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int, []float64) {
 	//numReached := 0
 	//fmt.Println("Hiaaa!")
 	isReady := true
 	//whichPath := make([]int, len(reqs))
+	linksWaiting := make([]float64, 0)
+	var reachedNum int
+	var w float64
 	var cntr int
 	for reqNum, req := range reqs {
 		//fmt.Println("Run - The req is: ", reqNum, " The path is: ", whichPath[reqNum])
@@ -179,7 +183,11 @@ func noRecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []
 			}
 			req.CanMove = true
 			//fmt.Println("------------------------LENGTH IS: ", len(req.Paths[whichPath[reqNum]]), "WHICH IS: ", whichPath[reqNum], "LENGTH OF PATHS IS: ", len(req.Paths))
-			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			numReached += reachedNum
+			if w > 0 {
+				linksWaiting = append(linksWaiting, w)
+			}
 			//if req.HasReached {
 			//fmt.Println("Req ", reqNum, " Has reached!")
 			//}
@@ -193,15 +201,18 @@ func noRecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []
 			req.CanMove = false
 		}
 	}
-	return numReached, whichPath
+	return numReached, whichPath, linksWaiting
 }
 
-func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int) {
+func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int, []float64) {
 	//fmt.Println("Hiaaa OPP!")
 	isReady := true
 	oppCntr := 0
 	k := config.GetConfig().GetOpportunismDegree()
 	//whichPath := make([]int, len(reqs))
+	linksWaiting := make([]float64, 0)
+	var reachedNum int
+	var w float64
 	var cntr int
 	for reqNum, req := range reqs {
 		//fmt.Println("Beginning - reqNum is", reqNum, "req.Position is", req.Position, "req.PositionID is", req.PositionID, "req.Src is", req.Src.ID, "req.Dest is", req.Dest.ID)
@@ -333,7 +344,11 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 			//	fmt.Println("node index is", ii, "node is", nodee.ID)
 			//}
 
-			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			numReached += reachedNum
+			if w > 0 {
+				linksWaiting = append(linksWaiting, w)
+			}
 		} else if (len(req.Paths[whichPath[reqNum]]) - req.Position - 1) <= oppCntr {
 			//fmt.Println("Inside else if!")
 			if changeSrc {
@@ -353,7 +368,11 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 			//	fmt.Println("node index is", ii, "node is", nodee.ID)
 			//}
 
-			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			numReached += reachedNum
+			if w > 0 {
+				linksWaiting = append(linksWaiting, w)
+			}
 			//fmt.Println("Fill in here. Maybe the remaining links are less than k, but are ready nonetheless.")
 		}
 		isReady = true
@@ -365,15 +384,18 @@ func noRecoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath
 			req.CanMove = false
 		}
 	}
-	return numReached, whichPath
+	return numReached, whichPath, linksWaiting
 }
 
-func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int) {
+func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int, []float64) {
 	//numReached := 0
 	//fmt.Println("Hiaaa!")
 	isReady := true
 	willRecover := false
 	//whichPath := make([]int, len(reqs))
+	linksWaiting := make([]float64, 0)
+	var w float64
+	var reachedNum int
 	var cntr int
 	for reqNum, req := range reqs {
 		//fmt.Println("Run - The req is: ", reqNum, " The path is: ", whichPath[reqNum])
@@ -497,7 +519,11 @@ func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []in
 				}
 				req.CanMove = true
 				//fmt.Println("------------------------LENGTH IS: ", len(req.Paths[whichPath[reqNum]]), "WHICH IS: ", whichPath[reqNum], "LENGTH OF PATHS IS: ", len(req.Paths))
-				numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+				reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+				numReached += reachedNum
+				if w > 0 {
+					linksWaiting = append(linksWaiting, w)
+				}
 			} else {
 				if !req.CanMoveRecovery {
 					for i := 1; i <= len(req.RecoveryPaths[whichPath[reqNum]][req.RecoveryPathCursor][req.RecoveryPathIndex])-1; i++ {
@@ -507,7 +533,11 @@ func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []in
 					}
 				}
 				req.CanMoveRecovery = true
-				numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, true)
+				reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, true)
+				numReached += reachedNum
+				if w > 0 {
+					linksWaiting = append(linksWaiting, w)
+				}
 			}
 			if req.HasReached {
 				//fmt.Println("Req ", reqNum, " Has reached!")
@@ -524,16 +554,19 @@ func RecoveryRun(network graph.Topology, reqs []*request.Request, whichPath []in
 			req.CanMove = false
 		}
 	}
-	return numReached, whichPath
+	return numReached, whichPath, linksWaiting
 }
 
-func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int) {
+func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath []int, numReached int, runTime int, changeSrc bool) (int, []int, []float64) {
 	//fmt.Println("Hiaaa OPP!")
 	isReady := true
 	willRecover := false
 	oppCntr := 0
 	k := config.GetConfig().GetOpportunismDegree()
 	//whichPath := make([]int, len(reqs))
+	linksWaiting := make([]float64, 0)
+	var reachedNum int
+	var w float64
 	var cntr int
 	for reqNum, req := range reqs {
 		oppCntr = 0
@@ -680,7 +713,11 @@ func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath [
 			//	fmt.Println("node index is", ii, "node is", nodee.ID)
 			//}
 
-			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			numReached += reachedNum
+			if w > 0 {
+				linksWaiting = append(linksWaiting, w)
+			}
 		} else if (len(req.Paths[whichPath[reqNum]]) - req.Position - 1) <= oppCntr {
 			if changeSrc {
 				//fmt.Println("finding position. PositionID is", req.PositionID, "path length is", len(req.Paths[whichPath[reqNum]]))
@@ -699,7 +736,11 @@ func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath [
 			//	fmt.Println("node index is", ii, "node is", nodee.ID)
 			//}
 
-			numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, false)
+			numReached += reachedNum
+			if w > 0 {
+				linksWaiting = append(linksWaiting, w)
+			}
 			//fmt.Println("Fill in here. Maybe the remaining links are less than k, but are ready nonetheless.")
 		} else {
 			//fmt.Println("recoveryRunOpp - Before reserving. reqNum is", reqNum)
@@ -719,7 +760,11 @@ func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath [
 					}
 					req.CanMoveRecovery = true
 					//fmt.Println("recoveryRunOpp - Before quantum.ES()")
-					numReached += quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, true)
+					reachedNum, w = quantum.ES(req, network, runTime, whichPath[reqNum], changeSrc, true)
+					numReached += reachedNum
+					if w > 0 {
+						linksWaiting = append(linksWaiting, w)
+					}
 					//fmt.Println("recoveryRunOpp - after quantum.ES(). reqNum is", reqNum)
 					//fmt.Println("recoveryRunOpp - after quantum.ES(). req.Position is", req.Position)
 					//fmt.Println("recoveryRunOpp - after quantum.ES(). req.PositionID is", req.PositionID)
@@ -736,7 +781,7 @@ func recoveryRunOPP(network graph.Topology, reqs []*request.Request, whichPath [
 			req.CanMove = false
 		}
 	}
-	return numReached, whichPath
+	return numReached, whichPath, linksWaiting
 }
 
 func checkForRecovery(network graph.Topology, req *request.Request, reqNum int, pathIndex int, isRecovering bool) bool {

@@ -11,6 +11,10 @@ filePath = "../Data/experiment1.txt"
 f = open(filePath, 'r')
 try:
     data = f.readlines()
+    splitted = data[1].split("[")
+    splitted = splitted[1].split("]")
+    splitted = splitted[0]
+    splitted = splitted.split(", ")
     intSplitted = np.zeros((len(data)-1, len(splitted)), dtype=int)
     for i in range(1, len(data)):
         splitted = data[i].split("[")
@@ -60,6 +64,7 @@ BIGGER_SIZE = 8
 MARKER_SIZE = 4
 LINE_WIDTH = 0.9
 
+plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('font', size=BIGGER_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
 plt.rc('axes', labelsize=BIGGER_SIZE)    # fontsize of the x and y labels

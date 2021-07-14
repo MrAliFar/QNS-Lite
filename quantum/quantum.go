@@ -27,7 +27,7 @@ func init() {
 	p_swap = config.GetConfig().GetPSwap()
 }
 
-func genEntanglement(links []*graph.Link) {
+func genEntanglement(links []*graph.Link, roundNum int) {
 	lifetime := config.GetConfig().GetLifetime()
 	p_gen = config.GetConfig().GetPGen()
 	//var r float64
@@ -46,6 +46,7 @@ func genEntanglement(links []*graph.Link) {
 				//fmt.Println("Link successfully generated!")
 				link.IsActive = true
 				link.Age = 0
+				link.GenerationTime = roundNum
 			}
 		}
 	}
@@ -58,19 +59,20 @@ func genEntangledLink(link *graph.Link) {
 }
 
 // TODO: Write a less dumb swap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-func swap(req *request.Request, path path.Path, network graph.Topology, roundNum int, changeSrc bool) bool {
+func swap(req *request.Request, path path.Path, network graph.Topology, roundNum int, changeSrc bool) (bool, float64) {
+	linkWaiting := float64(-1)
 	//fmt.Println(req.Position)
 	if req.Position == len(path)-1 {
 		//fmt.Println("SWAP: HAS REACHED 1")
 		req.HasReached = true
 		req.ServingTime = roundNum
-		return true
+		return true, linkWaiting
 	}
 	if graph.IsEqual(req.Dest.ID, req.PositionID) {
 		//fmt.Println("Inside quantum.swap, has reached: Request destination is:", req.Dest.ID, "request position is:", req.PositionID, "Last node of path is:", path[len(path)-1].ID)
 		req.HasReached = true
 		req.ServingTime = roundNum
-		return true
+		return true, linkWaiting
 	}
 	///////////////////// If swapping is unsuccessful, do the links get destroyed?
 	///////////////////// If swapping is unsuccessful, shall we unreserve the links, as
@@ -82,7 +84,7 @@ func swap(req *request.Request, path path.Path, network graph.Topology, roundNum
 			//fmt.Println("Dumb path req.PositionID is", req.PositionID)
 			req.HasReached = true
 			req.ServingTime = roundNum
-			return true
+			return true, linkWaiting
 		}
 	}
 	if req.Position == 1 {
@@ -102,9 +104,12 @@ func swap(req *request.Request, path path.Path, network graph.Topology, roundNum
 		if req.Position == 1 {
 			network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsReserved = false
 			network.GetLinkBetween(path[req.Position-1], path[req.Position]).Reservation = -1
+			network.GetLinkBetween(path[req.Position-1], path[req.Position]).ConsumptionTime = roundNum
 		}
 		network.GetLinkBetween(path[req.Position], path[req.Position+1]).IsReserved = false
 		network.GetLinkBetween(path[req.Position], path[req.Position+1]).Reservation = -1
+		network.GetLinkBetween(path[req.Position], path[req.Position+1]).ConsumptionTime = roundNum
+		linkWaiting = float64(network.GetLinkBetween(path[req.Position-1], path[req.Position]).ConsumptionTime - network.GetLinkBetween(path[req.Position-1], path[req.Position]).GenerationTime)
 		//if req.Position == 1 {
 		//	network.GetLinkBetween(path[req.Position-1], path[req.Position]).IsActive = false
 		//}
@@ -122,14 +127,14 @@ func swap(req *request.Request, path path.Path, network graph.Topology, roundNum
 			//fmt.Println("SWAP: HAS REACHED 2")
 			req.HasReached = true
 			req.ServingTime = roundNum
-			return true
+			return true, linkWaiting
 		}
 		//fmt.Println("Quantum: Dest is:", req.Dest.ID, "PositionID is:", req.PositionID)
 		if graph.IsEqual(req.Dest.ID, req.PositionID) {
 			//fmt.Println("Inside quantum.swap, has reached: Request destination is:", req.Dest.ID, "request position is:", req.PositionID, "Last node of path is:", path[len(path)-1].ID)
 			req.HasReached = true
 			req.ServingTime = roundNum
-			return true
+			return true, linkWaiting
 		}
 	} else {
 		/////////// Very important! Check this! dramatically decreases performance!
@@ -137,18 +142,19 @@ func swap(req *request.Request, path path.Path, network graph.Topology, roundNum
 		req.Src = req.InitialSrc
 		//fmt.Println("swap failed!")
 	}
-	return false
+	return false, linkWaiting
 }
 
-func EG(links []*graph.Link) {
-	genEntanglement(links)
+func EG(links []*graph.Link, roundNum int) {
+	genEntanglement(links, roundNum)
 }
 
-func ES(req *request.Request, network graph.Topology, roundNum int, whichPath int, changeSrc bool, isRecovery bool) int {
+func ES(req *request.Request, network graph.Topology, roundNum int, whichPath int, changeSrc bool, isRecovery bool) (int, float64) {
 	var reached bool
+	var linkWaiting float64
 	numReached := 0
 	if !isRecovery {
-		reached = swap(req, req.Paths[whichPath], network, roundNum, changeSrc)
+		reached, linkWaiting = swap(req, req.Paths[whichPath], network, roundNum, changeSrc)
 	} else {
 		auxiliaryReq := new(request.Request)
 		request.CopyRequest(auxiliaryReq, req)
@@ -159,7 +165,7 @@ func ES(req *request.Request, network graph.Topology, roundNum int, whichPath in
 		//	fmt.Println("quantum ES - Before recovery swap - The recovery path is", nodede.ID)
 		//}
 		//fmt.Println("quantum ES - Before recovery swap. auxiliaryReq.Position is", auxiliaryReq.Position)
-		reached = swap(auxiliaryReq, req.RecoveryPaths[whichPath][req.RecoveryPathCursor][req.RecoveryPathIndex], network, roundNum, changeSrc)
+		reached, linkWaiting = swap(auxiliaryReq, req.RecoveryPaths[whichPath][req.RecoveryPathCursor][req.RecoveryPathIndex], network, roundNum, changeSrc)
 		//fmt.Println("quantum ES - after recovery swap. auxiliaryReq.Position is", auxiliaryReq.Position)
 		//fmt.Println("quantum ES - after recovery swap. auxiliaryReq.PositionID is", auxiliaryReq.PositionID)
 		//fmt.Println("quantum ES - after recovery swap. req.Dest.ID is", req.Dest.ID)
@@ -205,5 +211,5 @@ func ES(req *request.Request, network graph.Topology, roundNum int, whichPath in
 	if reached == true {
 		numReached++
 	}
-	return numReached
+	return numReached, linkWaiting
 }

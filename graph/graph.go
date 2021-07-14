@@ -26,11 +26,13 @@ type Node struct {
 
 // The Link struct provides a link abstraction.
 type Link struct {
-	ID          []int
-	Age         int
-	Reservation int
-	IsReserved  bool
-	IsActive    bool
+	ID              []int
+	Age             int
+	GenerationTime  int
+	ConsumptionTime int
+	Reservation     int
+	IsReserved      bool
+	IsActive        bool
 	// The IsPruned field is for managing the pruning process.
 	IsPruned bool
 }
