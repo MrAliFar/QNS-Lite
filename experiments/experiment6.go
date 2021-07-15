@@ -13,21 +13,23 @@ func experiment6(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxIt
 	averageOPP := make([]float64, itrReqs)
 	varianceOPP := make([]float64, itrReqs)
 	p := [10]float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
+	//p := [1]float64{1}
 	ALWT := make([][]float64, 6)
 	for i := 0; i <= 5; i++ {
 		ALWT[i] = make([]float64, len(p))
 	}
-	algos := [3]string{"modified greedy", "nonoblivious local", "qpass"}
+	//algos := [3]string{"modified greedy", "nonoblivious local", "qpass"}
+	algos := [2]string{"modified greedy", "qpass"}
 	topologies := [1]string{"grid"}
-	config.SetPSwap(float64(0.6))
-	config.SetSize(5)
-	config.SetLifetime(600)
+	config.SetPSwap(float64(0.7))
+	config.SetSize(10)
+	config.SetLifetime(30)
 	config.SetNumRequests(20)
 	for p_genIndex, p_gen := range p {
 		config.SetPGen(p_gen)
 		fmt.Println("p_gen is", p_gen)
 		fmt.Println("config.p_gen is", config.GetConfig().GetPGen())
-		for algo := 0; algo < 3; algo++ {
+		for algo := 0; algo < len(algos); algo++ {
 			fmt.Println("algorithm is", algos[algo])
 			bm.Set(itrSingleReq, algos[algo], topologies[0])
 			bm.SetKeepReqs(true)
@@ -47,6 +49,8 @@ func experiment6(bm *benchmark.Benchmarker, itrReqs int, itrSingleReq int, maxIt
 				varianceOPP[i] = VarianceWaiting(bm.LinksWaitingTime, maxItr)
 			}
 			ALWT[2*algo][p_genIndex] = AverageWaiting(averageNOPP, maxItr)
+			//fmt.Println("averageNOPP is", averageNOPP)
+			//fmt.Println("averageOPP is", averageOPP)
 			ALWT[2*algo+1][p_genIndex] = AverageWaiting(averageOPP, maxItr)
 			fmt.Println("Average NOPP waiting time is:", AverageWaiting(averageNOPP, maxItr))
 			fmt.Println("Average OPP waiting time is:", AverageWaiting(averageOPP, maxItr))

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"os"
 	"strconv"
 
@@ -29,6 +30,10 @@ func AverageWaiting(nums []float64, maxItr int) float64 {
 			meanLength -= 1
 			continue
 		}
+		if math.IsNaN(val) {
+			meanLength -= 1
+			continue
+		}
 		sum += val
 	}
 	return float64(sum) / float64(meanLength)
@@ -41,6 +46,10 @@ func VarianceWaiting(nums []float64, maxItr int) float64 {
 	for _, val := range nums {
 		if val >= float64(maxItr)-1 {
 			varLength--
+			continue
+		}
+		if math.IsNaN(val) {
+			varLength -= 1
 			continue
 		}
 		sum += (float64(val) - ave) * (float64(val) - ave)

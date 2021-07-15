@@ -64,6 +64,9 @@ BIGGER_SIZE = 8
 MARKER_SIZE = 4
 LINE_WIDTH = 0.9
 
+#plt.rcParams['text.usetex'] = False
+plt.rcParams['pdf.fonttype'] = 42
+plt.rcParams['ps.fonttype'] = 42
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('font', size=BIGGER_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
